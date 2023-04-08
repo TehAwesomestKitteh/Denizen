@@ -3,7 +3,7 @@ package com.denizenscript.denizen.events.block;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizen.objects.MaterialTag;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import org.bukkit.Material;
@@ -40,12 +40,10 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
     // -->
 
     public BlockPhysicsScriptEvent() {
-        instance = this;
         registerCouldMatcher("<block> physics");
         registerSwitches("adjacent");
     }
 
-    public static BlockPhysicsScriptEvent instance;
 
     public LocationTag location;
     public MaterialTag material;
@@ -56,7 +54,7 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
         if (!runInCheck(path, location)) {
             return false;
         }
-        if (!material.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, material)) {
             return false;
         }
         String adjacent = path.switches.get("adjacent");
@@ -74,11 +72,6 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
             }
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "BlockPhysics";
     }
 
     public static Field PHYSICS_EVENT_DATA = ReflectionHelper.getFields(BlockPhysicsEvent.class).getFirstOfType(BlockData.class);

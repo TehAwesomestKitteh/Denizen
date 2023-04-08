@@ -28,13 +28,13 @@ public class EntityWitherInvulnerable implements Property {
             "invulnerable_duration"
     };
 
-    private EntityWitherInvulnerable(EntityTag _entity) {
+    public EntityWitherInvulnerable(EntityTag _entity) {
         entity = _entity;
     }
 
     EntityTag entity;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.invulnerable_duration>
@@ -45,7 +45,7 @@ public class EntityWitherInvulnerable implements Property {
         // @description
         // Returns the duration remaining until the wither becomes vulnerable.
         // -->
-        PropertyParser.<EntityWitherInvulnerable, DurationTag>registerTag(DurationTag.class, "invulnerable_duration", (attribute, object) -> {
+        PropertyParser.registerTag(EntityWitherInvulnerable.class, DurationTag.class, "invulnerable_duration", (attribute, object) -> {
             return new DurationTag((long) object.getWither().getInvulnerableTicks());
         });
     }

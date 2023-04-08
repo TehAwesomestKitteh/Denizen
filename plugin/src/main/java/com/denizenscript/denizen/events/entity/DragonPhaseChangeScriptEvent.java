@@ -37,12 +37,10 @@ public class DragonPhaseChangeScriptEvent extends BukkitScriptEvent implements L
     // -->
 
     public DragonPhaseChangeScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> changes phase");
         registerSwitches("from", "to");
     }
 
-    public static DragonPhaseChangeScriptEvent instance;
     public EntityTag entity;
     public EnderDragonChangePhaseEvent event;
 
@@ -65,11 +63,6 @@ public class DragonPhaseChangeScriptEvent extends BukkitScriptEvent implements L
     }
 
     @Override
-    public String getName() {
-        return "DragonPhaseChanged";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
         if (exactMatchesEnum(determinationObj.toString(), EnderDragon.Phase.values())) {
             EnderDragon.Phase phase = EnderDragon.Phase.valueOf(determinationObj.toString().toUpperCase());
@@ -87,7 +80,7 @@ public class DragonPhaseChangeScriptEvent extends BukkitScriptEvent implements L
             case "old_phase":
                 return new ElementTag(event.getCurrentPhase() == null ? "null" : event.getCurrentPhase().name());
             case "new_phase":
-                return new ElementTag(event.getNewPhase().name());
+                return new ElementTag(event.getNewPhase());
         }
         return super.getContext(name);
     }

@@ -1,16 +1,13 @@
 package com.denizenscript.denizen.tags.core;
 
-import com.denizenscript.denizen.objects.ColorTag;
-import com.denizenscript.denizen.objects.properties.bukkit.BukkitElementProperties;
+import com.denizenscript.denizen.objects.properties.bukkit.BukkitElementExtensions;
 import com.denizenscript.denizen.utilities.FormattedTextHelper;
+import com.denizenscript.denizencore.objects.core.ColorTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ListTag;
 import com.denizenscript.denizencore.objects.core.MapTag;
-import com.denizenscript.denizencore.tags.TagRunnable;
-import com.denizenscript.denizencore.tags.Attribute;
-import com.denizenscript.denizencore.tags.ReplaceableTagEvent;
 import com.denizenscript.denizencore.tags.TagManager;
-import com.denizenscript.denizencore.tags.core.EscapeTagBase;
+import com.denizenscript.denizencore.tags.core.EscapeTagUtil;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
 import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
 import org.bukkit.ChatColor;
@@ -18,226 +15,11 @@ import org.bukkit.ChatColor;
 public class TextTagBase {
 
     public TextTagBase() {
-        TagManager.registerTagHandler(new TagRunnable.RootForm() {
-            @Override
-            public void run(ReplaceableTagEvent event) {
-                String lower = CoreUtilities.toLowerCase(event.getName());
-                Attribute attribute = event.getAttributes();
-                if (event.getName().equals("&auml")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("ä").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (event.getName().equals("&Auml")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("Ä").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (event.getName().equals("&ouml")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("ö").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (event.getName().equals("&Ouml")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("Ö").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (event.getName().equals("&uuml")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("ü").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (event.getName().equals("&Uuml")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("Ü").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&amp")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("&").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&cm")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag(",").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&sc")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag(";").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&pipe")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("|").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&ds")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("$").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&dot")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag(".").getObjectAttribute(attribute.fulfill(1)));
-                }
-                else if (lower.equals("&hrt")) {
-                    BukkitImplDeprecations.pointlessTextTags.warn(event.getScriptEntry());
-                    event.setReplacedObject(new ElementTag("\u2665").getObjectAttribute(attribute.fulfill(1)));
-                }
-            }
-        }, "&auml", "&Auml", "&ouml", "&Ouml", "&uuml", "&Uuml", "&amp", "&cm", "&sc", "&pipe", "&ds", "&at", "&dot", "&hrt");
-
-        // <--[tag]
-        // @attribute <empty>
-        // @returns ElementTag
-        // @description
-        // Returns an empty element.
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "empty", (attribute) -> new ElementTag(""));
-
-        // <--[tag]
-        // @attribute <&at>
-        // @returns ElementTag
-        // @description
-        // Returns a at symbol: @
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&at", (attribute) -> new ElementTag("@"));
-
-        // <--[tag]
-        // @attribute <&pc>
-        // @returns ElementTag
-        // @description
-        // Returns a percent symbol: %
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&pc", (attribute) -> new ElementTag("%"));
-
-        // <--[tag]
-        // @attribute <&nl>
-        // @returns ElementTag
-        // @description
-        // Returns a newline symbol.
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&nl", (attribute) -> new ElementTag("\n"));
-
-        // <--[tag]
-        // @attribute <&ss>
-        // @returns ElementTag
-        // @description
-        // Returns an internal coloring symbol: §
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&ss", (attribute) -> new ElementTag("§"));
-
-        // <--[tag]
-        // @attribute <&sq>
-        // @returns ElementTag
-        // @description
-        // Returns a single-quote symbol: '
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&sq", (attribute) -> new ElementTag("'"));
-
-        // <--[tag]
-        // @attribute <&sp>
-        // @returns ElementTag
-        // @description
-        // Returns a space symbol.
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&sp", (attribute) -> new ElementTag(String.valueOf(' ')));
-
-        // <--[tag]
-        // @attribute <&nbsp>
-        // @returns ElementTag
-        // @description
-        // Returns a non-breaking space symbol.
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&nbsp", (attribute) -> new ElementTag(CoreUtilities.NBSP));
-
-        // <--[tag]
-        // @attribute <&dq>
-        // @returns ElementTag
-        // @synonyms &quote
-        // @description
-        // Returns a double-quote symbol: "
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&dq", (attribute) -> new ElementTag("\""));
-
-        // <--[tag]
-        // @attribute <&co>
-        // @returns ElementTag
-        // @description
-        // Returns a colon symbol: :
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&co", (attribute) -> new ElementTag(":"));
-
-        // <--[tag]
-        // @attribute <&rb>
-        // @returns ElementTag
-        // @description
-        // Returns a right-bracket symbol: ]
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&rb", (attribute) -> new ElementTag("]"));
-
-        // <--[tag]
-        // @attribute <&lb>
-        // @returns ElementTag
-        // @description
-        // Returns a left-bracket symbol: [
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&lb", (attribute) -> new ElementTag("["));
-
-        // <--[tag]
-        // @attribute <&rc>
-        // @returns ElementTag
-        // @description
-        // Returns a right-brace symbol: }
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&rc", (attribute) -> new ElementTag("}"));
-
-        // <--[tag]
-        // @attribute <&lc>
-        // @returns ElementTag
-        // @description
-        // Returns a left-brace symbol: {
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&lc", (attribute) -> new ElementTag("{"));
-
-        // <--[tag]
-        // @attribute <&ns>
-        // @returns ElementTag
-        // @description
-        // Returns a number sign / hash / pound symbol: #
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&ns", (attribute) -> new ElementTag("#"));
-
-        // <--[tag]
-        // @attribute <&lt>
-        // @returns ElementTag
-        // @description
-        // Returns a less than symbol: <
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&lt", (attribute) -> new ElementTag("<"));
-
-        // <--[tag]
-        // @attribute <&gt>
-        // @returns ElementTag
-        // @description
-        // Returns a greater than symbol: >
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&gt", (attribute) -> new ElementTag(">"));
-
-        // <--[tag]
-        // @attribute <&bs>
-        // @returns ElementTag
-        // @description
-        // Returns a backslash symbol: \
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&bs", (attribute) -> new ElementTag("\\"));
-
-        // <--[tag]
-        // @attribute <&chr[<character>]>
-        // @returns ElementTag
-        // @description
-        // Returns the Unicode character specified. e.g. <&chr[2665]> returns a heart.
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&chr", (attribute) -> new ElementTag(String.valueOf((char) Integer.parseInt(attribute.getParam(), 16))));
-
-        // <--[tag]
-        // @attribute <n>
-        // @returns ElementTag
-        // @description
-        // Returns a newline symbol.
-        // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "n", (attribute) -> new ElementTag("\n"));
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&amp", (attribute) -> { BukkitImplDeprecations.pointlessTextTags.warn(attribute.context); return new ElementTag("&"); });
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&cm", (attribute) -> { BukkitImplDeprecations.pointlessTextTags.warn(attribute.context); return new ElementTag(","); });
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&sc", (attribute) -> { BukkitImplDeprecations.pointlessTextTags.warn(attribute.context); return new ElementTag(";"); });
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&pipe", (attribute) -> { BukkitImplDeprecations.pointlessTextTags.warn(attribute.context); return new ElementTag("|"); });
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&dot", (attribute) -> { BukkitImplDeprecations.pointlessTextTags.warn(attribute.context); return new ElementTag("."); });
 
         // <--[tag]
         // @attribute <p>
@@ -405,6 +187,7 @@ public class TextTagBase {
         // For example: - narrate "Reward: <&translate[item.minecraft.diamond_sword]>"
         // Be warned that language keys change between Minecraft versions.
         // Note that this is a magic Denizen tool - refer to <@link language Denizen Text Formatting>.
+        // You can use <@link tag ElementTag.strip_color> to convert the translated output to plain text (pre-translated).
         // -->
         TagManager.registerTagHandler(ElementTag.class, "&translate", (attribute) -> { // Cannot be static due to hacked sub-tag
             if (!attribute.hasParam()) {
@@ -428,7 +211,7 @@ public class TextTagBase {
                 ListTag withList = attribute.contextAsType(2, ListTag.class);
                 attribute.fulfill(1);
                 for (String str : withList) {
-                    with.append(";").append(FormattedTextHelper.escape(EscapeTagBase.unEscape(str)));
+                    with.append(";").append(FormattedTextHelper.escape(EscapeTagUtil.unEscape(str)));
                 }
             }
             return new ElementTag(ChatColor.COLOR_CHAR + "[translate=" + FormattedTextHelper.escape(translateText) + with + "]");
@@ -451,9 +234,9 @@ public class TextTagBase {
             if (scoreList.size() < 2) {
                 return null;
             }
-            String name = FormattedTextHelper.escape(EscapeTagBase.unEscape(scoreList.get(0)));
-            String objective = FormattedTextHelper.escape(EscapeTagBase.unEscape(scoreList.get(1)));
-            String value = scoreList.size() >= 3 ? FormattedTextHelper.escape(EscapeTagBase.unEscape(scoreList.get(2))) : "";
+            String name = FormattedTextHelper.escape(EscapeTagUtil.unEscape(scoreList.get(0)));
+            String objective = FormattedTextHelper.escape(EscapeTagUtil.unEscape(scoreList.get(1)));
+            String value = scoreList.size() >= 3 ? FormattedTextHelper.escape(EscapeTagUtil.unEscape(scoreList.get(2))) : "";
             return new ElementTag(ChatColor.COLOR_CHAR + "[score=" + name + ";" + objective + ";" + value + "]");
         });
 
@@ -482,12 +265,15 @@ public class TextTagBase {
             }
             else if (colorName.startsWith("co@") || colorName.lastIndexOf(',') > colorName.indexOf(',')) {
                 ColorTag color = ColorTag.valueOf(colorName, attribute.context);
-                String hex = Integer.toHexString(color.getColor().asRGB());
+                if (color == null && TagManager.isStaticParsing) {
+                    return null;
+                }
+                String hex = Integer.toHexString(color.asRGB());
                 colorOut = FormattedTextHelper.stringifyRGBSpigot(hex);
             }
             if (colorOut == null) {
                 try {
-                    ChatColor color = ChatColor.valueOf(colorName.toUpperCase());
+                    ChatColor color = ChatColor.valueOf(CoreUtilities.toUpperCase(colorName));
                     colorOut = color.toString();
                 }
                 catch (IllegalArgumentException ex) {
@@ -509,18 +295,14 @@ public class TextTagBase {
         // @example
         // - narrate "<&gradient[from=black;to=white]>these are the shades of gray <white>that solidifies to pure white"
         // -->
-        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&gradient", (attribute) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            MapTag inputMap = attribute.inputParameterMap();
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, MapTag.class, "&gradient", (attribute, inputMap) -> {
             ColorTag fromColor = inputMap.getRequiredObjectAs("from", ColorTag.class, attribute);
             ColorTag toColor = inputMap.getRequiredObjectAs("to", ColorTag.class, attribute);
             ElementTag style = inputMap.getElement("style", "RGB");
             if (fromColor == null || toColor == null) {
                 return null;
             }
-            if (!style.matchesEnum(BukkitElementProperties.GradientStyle.class)) {
+            if (!style.matchesEnum(BukkitElementExtensions.GradientStyle.class)) {
                 attribute.echoError("Invalid gradient style '" + style + "'");
                 return null;
             }
@@ -540,6 +322,20 @@ public class TextTagBase {
                 return null;
             }
             return new ElementTag(ChatColor.COLOR_CHAR + "[font=" + attribute.getParam() + "]");
+        });
+
+        // <--[tag]
+        // @attribute <&optimize>
+        // @returns ElementTag
+        // @description
+        // Returns a chat code that tells the formatted text parser to try to produce mininalist JSON text.
+        // This is useful in particular for very long text or where text is being sent rapidly/repeatedly.
+        // It is not needed in most normal messages.
+        // It will produce incompatibility issues if used in items or other locations where raw JSON matching is required.
+        // Note that this is a magic Denizen tool - refer to <@link language Denizen Text Formatting>.
+        // -->
+        TagManager.registerStaticTagBaseHandler(ElementTag.class, "&optimize", (attribute) -> {
+            return new ElementTag(ChatColor.COLOR_CHAR + "[optimize=true]", true);
         });
 
         // <--[tag]

@@ -33,11 +33,9 @@ public class BlockCooksSmeltsItemScriptEvent extends BukkitScriptEvent implement
     // -->
 
     public BlockCooksSmeltsItemScriptEvent() {
-        instance = this;
         registerCouldMatcher("<block> cooks|smelts <item> (into <item>)");
     }
 
-    public static BlockCooksSmeltsItemScriptEvent instance;
     public ItemTag source_item;
     public ItemTag result_item;
     public LocationTag location;
@@ -45,14 +43,14 @@ public class BlockCooksSmeltsItemScriptEvent extends BukkitScriptEvent implement
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!location.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, location)) {
             return false;
         }
-        if (!source_item.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, source_item)) {
             return false;
         }
         if (path.eventArgLowerAt(3).equals("into")) {
-            if (!result_item.tryAdvancedMatcher(path.eventArgLowerAt(4))) {
+            if (!path.tryArgObject(4, result_item)) {
                 return false;
             }
         }
@@ -60,11 +58,6 @@ public class BlockCooksSmeltsItemScriptEvent extends BukkitScriptEvent implement
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "BlockCooksSmelts";
     }
 
     @Override

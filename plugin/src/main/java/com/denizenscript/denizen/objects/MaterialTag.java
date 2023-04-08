@@ -2,7 +2,8 @@ package com.denizenscript.denizen.objects;
 
 import com.denizenscript.denizen.objects.properties.material.*;
 import com.denizenscript.denizen.utilities.VanillaTagHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.objects.core.MapTag;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.DenizenCore;
 import com.denizenscript.denizencore.events.ScriptEvent;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
@@ -78,7 +79,7 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
         if (ObjectFetcher.isObjectWithProperties(string)) {
             return ObjectFetcher.getObjectFromWithProperties(MaterialTag.class, string, context);
         }
-        string = string.toUpperCase();
+        string = CoreUtilities.toUpperCase(string);
         if (string.startsWith("M@")) {
             string = string.substring("M@".length());
         }
@@ -195,11 +196,6 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
     }
 
     @Override
-    public String getObjectType() {
-        return "Material";
-    }
-
-    @Override
     public String identify() {
         return "m@" + identifyNoIdentifier();
     }
@@ -232,6 +228,11 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
     }
 
     @Override
+    public Object getJavaObject() {
+        return modernData == null ? material : modernData;
+    }
+
+    @Override
     public ObjectTag setPrefix(String prefix) {
         if (prefix != null) {
             this.prefix = prefix;
@@ -254,7 +255,7 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
         // Nothing to do.
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         AbstractFlagTracker.registerFlagHandlers(tagProcessor);
         PropertyParser.registerPropertyTagHandlers(MaterialTag.class, tagProcessor);
@@ -354,6 +355,18 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
         // -->
         tagProcessor.registerTag(ElementTag.class, "is_item", (attribute, object) -> {
             return new ElementTag(object.material.isItem());
+        });
+
+        // <--[tag]
+        // @attribute <MaterialTag.is_interactable>
+        // @returns ElementTag(Boolean)
+        // @description
+        // Returns whether the material can be interacted with.
+        // Some blocks such as piston heads and stairs are considered interactable.
+        // Note that this will return true if at least one state of a material has interaction handling.
+        // -->
+        tagProcessor.registerTag(ElementTag.class, "is_interactable", (attribute, object) -> {
+            return new ElementTag(object.material.isInteractable());
         });
 
         // <--[tag]
@@ -558,8 +571,7 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
         // This is a representation of how much time mining is needed to break a block.
         // -->
         tagProcessor.registerTag(ElementTag.class, "block_strength", (attribute, object) -> {
-            float res = NMSHandler.blockHelper.getBlockStength(object.material);
-            return new ElementTag(res);
+            return new ElementTag(NMSHandler.blockHelper.getBlockStrength(object.material));
         });
 
         tagProcessor.registerTag(ElementTag.class, "has_vanilla_data_tag", (attribute, object) -> {
@@ -598,7 +610,33 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
         // For the current instrument of a note block material refer to <@link tag MaterialTag.instrument>.
         // -->
         tagProcessor.registerTag(ElementTag.class, "produced_instrument", (attribute, object) -> {
-            return new ElementTag(NMSHandler.blockHelper.getInstrumentFor(object.getMaterial()).name());
+            return new ElementTag(NMSHandler.blockHelper.getInstrumentFor(object.getMaterial()));
+        });
+
+        // <--[tag]
+        // @attribute <MaterialTag.block_sound_data>
+        // @returns MapTag
+        // @description
+        // If the material is a block, returns the sound data for that block.
+        // The returned map has the following keys:
+        // volume, pitch: a decimal number
+        // break_sound, step_sound, place_sound, hit_sound, fall_sound: Bukkit name of the sound effect
+        // -->
+        tagProcessor.registerTag(MapTag.class, "block_sound_data", (attribute, object) -> {
+            if (!object.hasModernData()) {
+                attribute.echoError("Not a valid block.");
+                return null;
+            }
+            SoundGroup group = object.getModernData().getSoundGroup();
+            MapTag result = new MapTag();
+            result.putObject("volume", new ElementTag(group.getVolume()));
+            result.putObject("pitch", new ElementTag(group.getPitch()));
+            result.putObject("break_sound", new ElementTag(group.getBreakSound().name()));
+            result.putObject("step_sound", new ElementTag(group.getStepSound().name()));
+            result.putObject("place_sound", new ElementTag(group.getPlaceSound().name()));
+            result.putObject("hit_sound", new ElementTag(group.getHitSound().name()));
+            result.putObject("fall_sound", new ElementTag(group.getFallSound().name()));
+            return result;
         });
     }
 
@@ -714,7 +752,7 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
             NMSHandler.blockHelper.setPushReaction(material, mechanism.getValue().asString().toUpperCase());
         }
 
-        CoreUtilities.autoPropertyMechanism(this, mechanism);
+        tagProcessor.processMechanism(this, mechanism);
     }
 
     public static boolean advancedMatchesInternal(Material mat, String comparedto, boolean allowByMaterialName) {
@@ -751,7 +789,7 @@ public class MaterialTag implements ObjectTag, Adjustable, FlaggableObject {
             }
         }
         if (allowByMaterialName) {
-            Material quickOf = Material.getMaterial(comparedto.toUpperCase());
+            Material quickOf = Material.getMaterial(CoreUtilities.toUpperCase(comparedto));
             if (quickOf != null) {
                 return quickOf == mat;
             }

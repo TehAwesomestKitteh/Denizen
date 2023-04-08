@@ -35,18 +35,16 @@ public class EntityExitsVehicleScriptEvent extends BukkitScriptEvent implements 
     // -->
 
     public EntityExitsVehicleScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> exits <entity>");
     }
 
-    public static EntityExitsVehicleScriptEvent instance;
     public EntityTag vehicle;
     public EntityTag entity;
     public EntityDismountEvent event;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!entity.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, entity)) {
             return false;
         }
         String vehicleLabel = path.eventArgLowerAt(2);
@@ -57,11 +55,6 @@ public class EntityExitsVehicleScriptEvent extends BukkitScriptEvent implements 
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "EntityExitsVehicle";
     }
 
     @Override

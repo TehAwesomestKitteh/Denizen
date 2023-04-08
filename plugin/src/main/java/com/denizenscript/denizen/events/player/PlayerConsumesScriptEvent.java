@@ -3,7 +3,7 @@ package com.denizenscript.denizen.events.player;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.ItemTag;
 import com.denizenscript.denizen.tags.BukkitTagContext;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizencore.objects.ObjectTag;
@@ -41,10 +41,8 @@ public class PlayerConsumesScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public PlayerConsumesScriptEvent() {
-        instance = this;
     }
 
-    public static PlayerConsumesScriptEvent instance;
 
     public ItemTag item;
     public PlayerItemConsumeEvent event;
@@ -62,18 +60,13 @@ public class PlayerConsumesScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!item.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, item)) {
             return false;
         }
         if (!runInCheck(path, event.getPlayer().getLocation())) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerConsumes";
     }
 
     @Override

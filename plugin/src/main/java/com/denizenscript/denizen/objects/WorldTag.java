@@ -3,12 +3,13 @@ package com.denizenscript.denizen.objects;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.abstracts.BiomeNMS;
-import com.denizenscript.denizen.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.flags.WorldFlagHandler;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.flags.FlaggableObject;
-import com.denizenscript.denizencore.objects.*;
-import com.denizenscript.denizen.utilities.Settings;
+import com.denizenscript.denizencore.objects.Adjustable;
+import com.denizenscript.denizencore.objects.Fetchable;
+import com.denizenscript.denizencore.objects.Mechanism;
+import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.DurationTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ListTag;
@@ -17,8 +18,9 @@ import com.denizenscript.denizencore.tags.Attribute;
 import com.denizenscript.denizencore.tags.ObjectTagProcessor;
 import com.denizenscript.denizencore.tags.TagContext;
 import com.denizenscript.denizencore.tags.TagRunnable;
+import com.denizenscript.denizencore.utilities.CoreConfiguration;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
-import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.*;
@@ -26,28 +28,15 @@ import org.bukkit.boss.DragonBattle;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.world.TimeSkipEvent;
 import org.bukkit.util.BoundingBox;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
-
-    /////////////////////
-    //   STATIC METHODS
-    /////////////////
-
-    public static WorldTag mirrorBukkitWorld(World world) {
-        if (world == null) {
-            return null;
-        }
-        return new WorldTag(world);
-    }
-
-    /////////////////////
-    //   OBJECT FETCHER
-    /////////////////
 
     // <--[ObjectType]
     // @name WorldTag
@@ -78,11 +67,6 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
     // "world_flagged:<flag>": a Flag Matchable for WorldTag flags.
     //
     // -->
-
-    @Deprecated
-    public static WorldTag valueOf(String string) {
-        return valueOf(string, null);
-    }
 
     @Fetchable("w")
     public static WorldTag valueOf(String string, TagContext context) {
@@ -185,6 +169,18 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
         }
     }
 
+    public <T> T getGameRuleOrDefault(GameRule<T> gameRule) {
+        World world = getWorld();
+        T value = world.getGameRuleValue(gameRule);
+        if (value == null) {
+            value = world.getGameRuleDefault(gameRule);
+            if (value == null) {
+                throw new IllegalStateException("World " + world_name + " contains no GameRule " + gameRule.getName());
+            }
+        }
+        return value;
+    }
+
     private String prefix;
     String world_name;
 
@@ -218,11 +214,6 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
     }
 
     @Override
-    public String getObjectType() {
-        return "World";
-    }
-
-    @Override
     public String identify() {
         return "w@" + world_name;
 
@@ -239,12 +230,17 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
     }
 
     @Override
+    public Object getJavaObject() {
+        return getWorld();
+    }
+
+    @Override
     public ObjectTag setPrefix(String prefix) {
         this.prefix = prefix;
         return this;
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         AbstractFlagTracker.registerFlagHandlers(tagProcessor);
 
@@ -367,12 +363,6 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
             }
 
             return chunks;
-        });
-
-        registerTag(ChunkTag.class, "random_loaded_chunk", (attribute, object) -> {
-            BukkitImplDeprecations.worldRandomLoadedChunkTag.warn(attribute.context);
-            int random = CoreUtilities.getRandom().nextInt(object.getWorld().getLoadedChunks().length);
-            return new ChunkTag(object.getWorld().getLoadedChunks()[random]);
         });
 
         // <--[tag]
@@ -548,7 +538,7 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
         // Returns the name of the difficulty level.
         // -->
         registerTag(ElementTag.class, "difficulty", (attribute, object) -> {
-            return new ElementTag(object.getWorld().getDifficulty().name());
+            return new ElementTag(object.getWorld().getDifficulty());
         });
 
         // <--[tag]
@@ -597,6 +587,7 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
 
         // <--[tag]
         // @attribute <WorldTag.duration_since_created>
+        // @mechanism WorldTag.duration_since_created
         // @returns DurationTag
         // @description
         // Returns the total duration of time since this world was first created.
@@ -736,7 +727,7 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
         // Returns the environment of the world: NORMAL, NETHER, or THE_END.
         // -->
         registerTag(ElementTag.class, "environment", (attribute, object) -> {
-            return new ElementTag(object.getWorld().getEnvironment().name());
+            return new ElementTag(object.getWorld().getEnvironment());
         });
 
         /////////////////////
@@ -936,6 +927,85 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
             return new ElementTag(world.getWorld().getSimulationDistance());
         });
 
+        // <--[tag]
+        // @attribute <WorldTag.enough_sleeping[(<#>)]>
+        // @returns ElementTag(Boolean)
+        // @description
+        // Returns whether enough players are sleeping to prepare for the night to advance.
+        // Typically used before checking <@link tag WorldTag.enough_deep_sleeping>
+        // By default, automatically checks the playersSleepingPercentage gamerule,
+        // but this can optionally be overridden by specifying a percentage integer.
+        // Any integer above 100 will always yield 'false'. Requires at least one player to be sleeping to return 'true'.
+        // -->
+        registerTag(ElementTag.class, "enough_sleeping", (attribute, world) -> {
+            int percentage;
+            if (attribute.hasParam()) {
+                percentage = attribute.getIntParam();
+            }
+            else {
+                percentage = world.getGameRuleOrDefault(GameRule.PLAYERS_SLEEPING_PERCENTAGE);
+            }
+            return new ElementTag(NMSHandler.worldHelper.areEnoughSleeping(world.getWorld(), percentage));
+        });
+
+        // <--[tag]
+        // @attribute <WorldTag.enough_deep_sleeping[(<#>)]>
+        // @returns ElementTag(Boolean)
+        // @description
+        // Returns whether enough players have been in bed long enough for the night to advance (generally 100 ticks).
+        // Loops through all online players, so is typically used after checking <@link tag WorldTag.enough_sleeping>
+        // By default, automatically checks the playersSleepingPercentage gamerule,
+        // but this can optionally be overridden by specifying a percentage integer.
+        // Any integer above 100 will always yield 'false'. Requires at least one player to be sleeping to return 'true'.
+        // -->
+        registerTag(ElementTag.class, "enough_deep_sleeping", (attribute, world) -> {
+            int percentage;
+            if (attribute.hasParam()) {
+                percentage = attribute.getIntParam();
+            }
+            else {
+                percentage = world.getGameRuleOrDefault(GameRule.PLAYERS_SLEEPING_PERCENTAGE);
+            }
+            return new ElementTag(NMSHandler.worldHelper.areEnoughDeepSleeping(world.getWorld(), percentage));
+        });
+
+        // <--[tag]
+        // @attribute <WorldTag.sky_darkness>
+        // @returns ElementTag(Number)
+        // @description
+        // Returns the current darkness level of the sky in this world.
+        // This is determined by an equation that factors in rain, thunder, and time of day.
+        // When 4 or higher, players are typically allowed to sleep through the night.
+        // -->
+        registerTag(ElementTag.class, "sky_darkness", (attribute, world) -> {
+            return new ElementTag(NMSHandler.worldHelper.getSkyDarken(world.getWorld()));
+        });
+
+        // <--[tag]
+        // @attribute <WorldTag.is_day>
+        // @returns ElementTag(Boolean)
+        // @description
+        // Returns whether it is considered day in this world. Players are not allowed to sleep at this time.
+        // Note that in certain worlds, this and <@link tag WorldTag.is_night> can both be 'false'! (The nether, for example!)
+        // In typical worlds, this is 'true' if <@link tag WorldTag.sky_darkness> is less than 4.
+        // To check the current time without storm interference, see <@link tag WorldTag.time> and related tags.
+        // -->
+        registerTag(ElementTag.class, "is_day", (attribute, world) -> {
+            return new ElementTag(NMSHandler.worldHelper.isDay(world.getWorld()));
+        });
+
+        // <--[tag]
+        // @attribute <WorldTag.is_night>
+        // @returns ElementTag(Boolean)
+        // @description
+        // Returns whether it is considered night in this world. Players are typically allowed to sleep at this time.
+        // Note that in certain worlds, this and <@link tag WorldTag.is_day> can both be 'false'! (The nether, for example!)
+        // In typical worlds, this is 'true' if <@link tag WorldTag.sky_darkness> is 4 or higher.
+        // To check the current time without storm interference, see <@link tag WorldTag.time> and related tags.
+        // -->
+        registerTag(ElementTag.class, "is_night", (attribute, world) -> {
+            return new ElementTag(NMSHandler.worldHelper.isNight(world.getWorld()));
+        });
     }
 
     public static ObjectTagProcessor<WorldTag> tagProcessor = new ObjectTagProcessor<>();
@@ -961,8 +1031,6 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
 
     @Override
     public void adjust(Mechanism mechanism) {
-
-        AbstractFlagTracker.tryFlagAdjusts(this, mechanism);
 
         // <--[mechanism]
         // @object WorldTag
@@ -1056,12 +1124,15 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
         // Require config setting 'Commands.Delete.Allow file deletion'.
         // -->
         if (mechanism.matches("destroy")) {
-            if (!Settings.allowDelete()) {
-                Debug.echoError("Unable to delete due to config.");
+            File folder = getWorld().getWorldFolder();
+            unloadWorldClean(mechanism, false);
+            if (getWorld() != null) {
                 return;
             }
-            File folder = getWorld().getWorldFolder();
-            Bukkit.getServer().unloadWorld(getWorld(), false);
+            if (!CoreConfiguration.allowFileDeletion) {
+                mechanism.echoError("Unable to destroy world due to config setting, refer to 'WorldTag.destroy' meta documentation.");
+                return;
+            }
             try {
                 CoreUtilities.deleteDirectory(folder);
             }
@@ -1079,7 +1150,7 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
         // Unloads the world from the server without saving chunks.
         // -->
         if (mechanism.matches("force_unload")) {
-            Bukkit.getServer().unloadWorld(getWorld(), false);
+            unloadWorldClean(mechanism, false);
             return;
         }
 
@@ -1235,7 +1306,7 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
         // Unloads the world from the server and saves chunks.
         // -->
         if (mechanism.matches("unload")) {
-            Bukkit.getServer().unloadWorld(getWorld(), true);
+            unloadWorldClean(mechanism, true);
             return;
         }
 
@@ -1265,7 +1336,72 @@ public class WorldTag implements ObjectTag, Adjustable, FlaggableObject {
             getWorld().setWeatherDuration(mechanism.valueAsType(DurationTag.class).getTicksAsInt());
         }
 
-        CoreUtilities.autoPropertyMechanism(this, mechanism);
+        // <--[mechanism]
+        // @object WorldTag
+        // @name advance_ticks
+        // @input ElementTag(Number)
+        // @description
+        // Advances this world's day the specified number of ticks WITHOUT firing any events.
+        // Useful for manually adjusting the daylight cycle without firing an event every tick, for example.
+        // -->
+        if (mechanism.matches("advance_ticks") && mechanism.requireInteger()) {
+            World world = getWorld();
+            NMSHandler.worldHelper.setDayTime(world, world.getFullTime() + mechanism.getValue().asInt());
+        }
+
+        // <--[mechanism]
+        // @object WorldTag
+        // @name duration_since_created
+        // @input DurationTag
+        // @description
+        // Changes the world's internal time-since-created value.
+        // @tags
+        // <WorldTag.duration_since_created>
+        // -->
+        if (mechanism.matches("duration_since_created") && mechanism.requireObject(DurationTag.class)) {
+            NMSHandler.worldHelper.setGameTime(getWorld(), mechanism.valueAsType(DurationTag.class).getTicks());
+        }
+
+        // <--[mechanism]
+        // @object WorldTag
+        // @name skip_night
+        // @input None
+        // @description
+        // Skips to the next day as if enough players slept through the night.
+        // NOTE: This ignores the doDaylightCycle gamerule!
+        // -->
+        if (mechanism.matches("skip_night")) {
+            // general logic from NMS world tick
+            World world = getWorld();
+            long worldTime = world.getFullTime();
+            long nextDay = worldTime + 24000L;
+            TimeSkipEvent event = new TimeSkipEvent(world, TimeSkipEvent.SkipReason.NIGHT_SKIP, nextDay - nextDay % 24000L - worldTime);
+            Bukkit.getPluginManager().callEvent(event);
+            if (!event.isCancelled()) {
+                NMSHandler.worldHelper.setDayTime(world, worldTime + event.getSkipAmount());
+            }
+            if (!event.isCancelled()) {
+                NMSHandler.worldHelper.wakeUpAllPlayers(world);
+            }
+            // minor change: prior to 1.18, hasStorm/isRaining was not checked
+            if (getGameRuleOrDefault(GameRule.DO_WEATHER_CYCLE) && world.hasStorm()) {
+                NMSHandler.worldHelper.clearWeather(world);
+            }
+        }
+
+        tagProcessor.processMechanism(this, mechanism);
+    }
+
+    public void unloadWorldClean(Mechanism mechanism, boolean doSave) {
+        for (Player pl : new ArrayList<>(getWorld().getPlayers())) {
+            if (pl.isOnline()) {
+                mechanism.echoError("For WorldTag." + mechanism.getName() + " mechanism, Player " + pl.getUniqueId() + "/" + pl.getName() + " is inside world and will be kicked.");
+                pl.kickPlayer("World being destroyed.");
+            }
+        }
+        if (!Bukkit.getServer().unloadWorld(getWorld(), doSave)) {
+            mechanism.echoError("WorldTag." + mechanism.getName() + " for world " + world_name + " was refused by the System. Are you sure (A) this world is even loaded, (B) all players have been removed, and (C) this is not the default world?");
+        }
     }
 
     @Override

@@ -19,16 +19,8 @@ public class EntityPicksUpItemScriptEvent extends BukkitScriptEvent implements L
 
     // <--[event]
     // @Events
-    // entity picks up item
-    // entity picks up <item>
     // <entity> picks up <item>
-    // <entity> picks up item
-    // entity takes item
-    // entity takes <item>
-    // <entity> takes item
     // <entity> takes <item>
-    //
-    // @Regex ^on [^\s]+ picks up [^\s]+$
     //
     // @Group Player
     //
@@ -45,7 +37,7 @@ public class EntityPicksUpItemScriptEvent extends BukkitScriptEvent implements L
     // <context.location> returns a LocationTag of the item's location.
     //
     // @Determine
-    // "ITEM:" + ItemTag to changed the item being picked up.
+    // "ITEM:<ItemTag>" to changed the item being picked up.
     //
     // @Player when the entity picking up the item is a player.
     //
@@ -54,10 +46,10 @@ public class EntityPicksUpItemScriptEvent extends BukkitScriptEvent implements L
     // -->
 
     public EntityPicksUpItemScriptEvent() {
-        instance = this;
+        registerCouldMatcher("<entity> picks up <item>");
+        registerCouldMatcher("<entity> takes <item>");
     }
 
-    public static EntityPicksUpItemScriptEvent instance;
     public ItemTag item;
     public EntityTag entity;
     public LocationTag location;
@@ -66,27 +58,8 @@ public class EntityPicksUpItemScriptEvent extends BukkitScriptEvent implements L
     private static final Set<UUID> editedItems = new HashSet<>();
 
     @Override
-    public boolean couldMatch(ScriptPath path) {
-        boolean isUp = path.eventLower.contains("picks up");
-        if (!isUp && !path.eventArgLowerAt(1).equals("takes")) {
-            return false;
-        }
-        if (path.eventArgLowerAt(3).equals("from")) {
-            return false;
-        }
-        if (!couldMatchEntity(path.eventArgLowerAt(0))) {
-            return false;
-        }
-        String item = path.eventArgLowerAt(isUp ? 3 : 2);
-        if (item.equals("launched") || !couldMatchItem(item)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public boolean matches(ScriptPath path) {
-        if (!entity.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, entity)) {
             return false;
         }
         if (!item.tryAdvancedMatcher(path.eventArgLowerAt(path.eventArgLowerAt(1).equals("picks") ? 3 : 2))) {
@@ -96,11 +69,6 @@ public class EntityPicksUpItemScriptEvent extends BukkitScriptEvent implements L
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "EntityPicksUpItem";
     }
 
     @Override

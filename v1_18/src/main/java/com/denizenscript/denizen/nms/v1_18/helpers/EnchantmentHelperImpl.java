@@ -5,9 +5,8 @@ import com.denizenscript.denizen.nms.v1_18.Handler;
 import com.denizenscript.denizen.nms.v1_18.ReflectionMappingsInfo;
 import com.denizenscript.denizen.scripts.containers.core.EnchantmentScriptContainer;
 import com.denizenscript.denizen.utilities.FormattedTextHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
-import net.md_5.bungee.api.ChatColor;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
@@ -184,7 +183,7 @@ public class EnchantmentHelperImpl extends EnchantmentHelper {
 
     @Override
     public String getFullName(Enchantment enchantment, int level) {
-        return FormattedTextHelper.stringify(Handler.componentToSpigot(((CraftEnchantment) enchantment).getHandle().getFullname(level)), ChatColor.GRAY);
+        return FormattedTextHelper.stringify(Handler.componentToSpigot(((CraftEnchantment) enchantment).getHandle().getFullname(level)));
     }
 
     @Override
@@ -209,7 +208,7 @@ public class EnchantmentHelperImpl extends EnchantmentHelper {
 
     @Override
     public int getDamageProtection(Enchantment enchantment, int level, EntityDamageEvent.DamageCause type, org.bukkit.entity.Entity attacker) {
-        DamageSource src = EntityHelperImpl.getSourceFor(((CraftEntity) attacker).getHandle(), type);
+        DamageSource src = EntityHelperImpl.getSourceFor(attacker == null ? null : ((CraftEntity) attacker).getHandle(), type);
         if (src instanceof EntityHelperImpl.FakeDamageSrc) {
             src = ((EntityHelperImpl.FakeDamageSrc) src).real;
         }

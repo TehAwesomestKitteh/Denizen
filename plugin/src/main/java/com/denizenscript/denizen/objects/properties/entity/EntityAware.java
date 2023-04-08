@@ -28,7 +28,7 @@ public class EntityAware implements Property {
             "is_aware"
     };
 
-    private EntityAware(EntityTag entity) {
+    public EntityAware(EntityTag entity) {
         this.entity = entity;
     }
 
@@ -48,7 +48,7 @@ public class EntityAware implements Property {
         return (Mob) entity.getBukkitEntity();
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.is_aware>
@@ -60,7 +60,7 @@ public class EntityAware implements Property {
         // Unaware entities will not perform any actions on their own, such as pathfinding or attacking.
         // Similar to <@link tag EntityTag.has_ai>, except allows the entity to be moved by gravity, being pushed or attacked, etc.
         // -->
-        PropertyParser.<EntityAware, ElementTag>registerTag(ElementTag.class, "is_aware", (attribute, entity) -> {
+        PropertyParser.registerTag(EntityAware.class, ElementTag.class, "is_aware", (attribute, entity) -> {
             return new ElementTag(entity.getMob().isAware());
         });
     }

@@ -51,19 +51,17 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
     //
     // @Determine
     // ElementTag to change the message.
-    // "FORMAT:" + ScriptTag to set the format script the message should use.
-    // "RAW_FORMAT:" + ElementTag to set the format directly (without a format script). (Use with caution, avoid if possible).
-    // "RECIPIENTS:" + ListTag(PlayerTag) to set the list of players that will receive the message.
+    // "FORMAT:<ScriptTag>" to set the format script the message should use.
+    // "RAW_FORMAT:<ElementTag>" to set the format directly (without a format script). (Use with caution, avoid if possible).
+    // "RECIPIENTS:<ListTag(PlayerTag)>" to set the list of players that will receive the message.
     //
     // @Player Always.
     //
     // -->
 
     public ChatScriptEvent() {
-        instance = this;
     }
 
-    public static ChatScriptEvent instance;
 
     public PlayerChatEvent pcEvent;
     public AsyncPlayerChatEvent apcEvent;
@@ -89,11 +87,6 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "Chat";
     }
 
     @Override

@@ -50,10 +50,8 @@ public class PlayerCraftsItemScriptEvent extends BukkitScriptEvent implements Li
     // -->
 
     public PlayerCraftsItemScriptEvent() {
-        instance = this;
     }
 
-    public static PlayerCraftsItemScriptEvent instance;
     public CraftItemEvent event;
     public ItemTag result;
     public PlayerTag player;
@@ -71,15 +69,10 @@ public class PlayerCraftsItemScriptEvent extends BukkitScriptEvent implements Li
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!result.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, result)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerCraftsItem";
     }
 
     @Override
@@ -108,13 +101,13 @@ public class PlayerCraftsItemScriptEvent extends BukkitScriptEvent implements Li
         }
         else if (name.equals("amount")) {
             int amount = event.getRecipe().getResult().getAmount();
-            if (event.getClick() == ClickType.SHIFT_LEFT) {
+            if (event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT) {
                 amount *= RecipeHelper.getMaximumOutputQuantity(event.getRecipe(), event.getInventory());
             }
             return new ElementTag(amount);
         }
         else if (name.equals("click_type")) {
-            return new ElementTag(event.getClick().name());
+            return new ElementTag(event.getClick());
         }
         else if (name.equals("recipe")) {
             ListTag recipe = new ListTag();
@@ -163,7 +156,6 @@ public class PlayerCraftsItemScriptEvent extends BukkitScriptEvent implements Li
             result = new ItemTag(event.getRecipe().getResult());
         }
         this.player = EntityTag.getPlayerFrom(humanEntity);
-        this.cancelled = false;
         fire(event);
     }
 }

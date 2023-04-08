@@ -38,9 +38,9 @@ public class PlayerUsesPortalScriptEvent extends BukkitScriptEvent implements Li
     //
     // @Determine
     // LocationTag to change the destination.
-    // "CAN_CREATE:" + ElementTag(Boolean) to set whether the server will attempt to create a destination portal.
-    // "CREATION_RADIUS:" + ElementTag(Number) to set the radius that will be checked for a free space to create the portal in.
-    // "SEARCH_RADIUS:" + ElementTag(Number) to set the radius that will be checked for an existing portal to teleport to.
+    // "CAN_CREATE:<ElementTag(Boolean)>" to set whether the server will attempt to create a destination portal.
+    // "CREATION_RADIUS:<ElementTag(Number)>" to set the radius that will be checked for a free space to create the portal in.
+    // "SEARCH_RADIUS:<ElementTag(Number)>" to set the radius that will be checked for an existing portal to teleport to.
     //
     // @Player Always.
     //
@@ -49,10 +49,8 @@ public class PlayerUsesPortalScriptEvent extends BukkitScriptEvent implements Li
     public PlayerUsesPortalScriptEvent() {
         registerCouldMatcher("player uses portal");
         registerSwitches("from", "to");
-        instance = this;
     }
 
-    public static PlayerUsesPortalScriptEvent instance;
     public LocationTag to;
     public LocationTag from;
     public PlayerPortalEvent event;
@@ -63,18 +61,13 @@ public class PlayerUsesPortalScriptEvent extends BukkitScriptEvent implements Li
         if (!runInCheck(path, to) && !runInCheck(path, from)) {
             return false;
         }
-        if (path.switches.containsKey("from") && !from.tryAdvancedMatcher(path.switches.get("from"))) {
+        if (!path.tryObjectSwitch("from", from)) {
             return false;
         }
-        if (path.switches.containsKey("to") && (to == null || !to.tryAdvancedMatcher(path.switches.get("to")))) {
+        if (!path.tryObjectSwitch("to", to)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerUsesPortal";
     }
 
     @Override

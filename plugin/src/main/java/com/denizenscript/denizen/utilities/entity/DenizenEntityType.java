@@ -1,6 +1,6 @@
 package com.denizenscript.denizen.utilities.entity;
 
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.Settings;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.enums.CustomEntityType;
@@ -14,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public class DenizenEntityType {
         this.customEntityType = CustomEntityType.valueOf(name.toUpperCase());
     }
 
-    public Entity spawnNewEntity(Location location, ArrayList<Mechanism> mechanisms, String scriptName) {
+    public Entity spawnNewEntity(Location location, ArrayList<Mechanism> mechanisms, String scriptName, CreatureSpawnEvent.SpawnReason reason) {
         try {
             if (name.equals("DROPPED_ITEM")) {
                 ItemStack itemStack = new ItemStack(Material.STONE);
@@ -89,7 +90,7 @@ public class DenizenEntityType {
                 return location.getWorld().dropItem(location, itemStack);
             }
             else if (!isCustom()) {
-                return SpawnEntityHelper.spawn(location, bukkitEntityType, mechanisms, scriptName);
+                return SpawnEntityHelper.spawn(location, bukkitEntityType, mechanisms, scriptName, reason);
             }
             else {
                 switch (customEntityType) {

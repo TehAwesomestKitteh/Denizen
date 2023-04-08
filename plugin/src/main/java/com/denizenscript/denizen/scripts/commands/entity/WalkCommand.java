@@ -2,7 +2,7 @@ package com.denizenscript.denizen.scripts.commands.entity;
 
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.depends.Depends;
 import com.denizenscript.denizencore.objects.Argument;
 import com.denizenscript.denizen.nms.NMSHandler;
@@ -205,14 +205,13 @@ public class WalkCommand extends AbstractCommand implements Holdable {
         }
         if (scriptEntry.shouldWaitFor()) {
             held.add(scriptEntry);
-            if (!npcs.isEmpty()) {
+            if (!npcs.isEmpty()) { // TODO: de-jank this
                 scriptEntry.addObject("tally", npcs);
             }
             if (!waitForEntities.isEmpty()) {
                 scriptEntry.addObject("entities", waitForEntities);
             }
         }
-
     }
 
     // Held script entries

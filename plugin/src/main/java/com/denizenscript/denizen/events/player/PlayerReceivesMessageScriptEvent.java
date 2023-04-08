@@ -10,6 +10,7 @@ import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.scripts.ScriptEntryData;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.chat.ComponentSerializer;
 
 public class PlayerReceivesMessageScriptEvent extends BukkitScriptEvent {
@@ -34,8 +35,8 @@ public class PlayerReceivesMessageScriptEvent extends BukkitScriptEvent {
     // <context.system_message> returns true if the message is a system message (not player chat).
     //
     // @Determine
-    // "MESSAGE:" + ElementTag to change the message.
-    // "RAW_JSON:" + ElementTag to change the JSON used for the message.
+    // "MESSAGE:<ElementTag>" to change the message.
+    // "RAW_JSON:<ElementTag>" to change the JSON used for the message.
     //
     // @Player Always.
     //
@@ -48,14 +49,12 @@ public class PlayerReceivesMessageScriptEvent extends BukkitScriptEvent {
     public static PlayerReceivesMessageScriptEvent instance;
     public ElementTag message;
     public ElementTag rawJson;
+    public boolean didModify;
+    public BaseComponent[] altMessageDetermination;
     public ElementTag system;
     public boolean modified;
     public PlayerTag player;
     public boolean loaded;
-
-    public ChatColor baseColor() {
-        return ChatColor.BLACK;
-    }
 
     public void reset() {
         player = null;
@@ -64,16 +63,13 @@ public class PlayerReceivesMessageScriptEvent extends BukkitScriptEvent {
         system = null;
         cancelled = false;
         modified = false;
+        altMessageDetermination = null;
+        didModify = false;
     }
 
     @Override
     public boolean couldMatch(ScriptPath path) {
         return path.eventLower.startsWith("player receives message");
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerReceivesMessage";
     }
 
     @Override
@@ -94,13 +90,14 @@ public class PlayerReceivesMessageScriptEvent extends BukkitScriptEvent {
             String lower = CoreUtilities.toLowerCase(determination);
             if (lower.startsWith("message:")) {
                 message = new ElementTag(determination.substring("message:".length()), true);
-                rawJson = new ElementTag(ComponentSerializer.toString(FormattedTextHelper.parse(message.asString(), baseColor())), true);
+                altMessageDetermination = FormattedTextHelper.parse(message.asString(), ChatColor.WHITE);
                 modified = true;
                 return true;
             }
             if (lower.startsWith("raw_json:")) {
                 rawJson = new ElementTag(determination.substring("raw_json:".length()));
-                message = new ElementTag(FormattedTextHelper.stringify(ComponentSerializer.parse(rawJson.asString()), baseColor()), true);
+                altMessageDetermination = null;
+                message = new ElementTag(FormattedTextHelper.stringify(ComponentSerializer.parse(rawJson.asString())), true);
                 modified = true;
                 return true;
             }
@@ -115,15 +112,23 @@ public class PlayerReceivesMessageScriptEvent extends BukkitScriptEvent {
 
     @Override
     public ObjectTag getContext(String name) {
-        if (name.equals("message")) {
-            return message;
-        }
-        if (name.equals("raw_json")) {
-            return rawJson;
-        }
-        if (name.equals("system_message")) {
-            return system;
+        switch (name) {
+            case "message": return message;
+            case "system_message": return system;
+            case "raw_json":
+                if (altMessageDetermination != null) {
+                    return new ElementTag(FormattedTextHelper.componentToJson(altMessageDetermination), true);
+                }
+                return rawJson;
         }
         return super.getContext(name);
+    }
+
+    public PlayerReceivesMessageScriptEvent triggerNow() {
+        PlayerReceivesMessageScriptEvent event = (PlayerReceivesMessageScriptEvent) fire();
+        if (event.modified && event.altMessageDetermination == null) {
+            event.altMessageDetermination = ComponentSerializer.parse(event.rawJson.asString());
+        }
+        return event;
     }
 }

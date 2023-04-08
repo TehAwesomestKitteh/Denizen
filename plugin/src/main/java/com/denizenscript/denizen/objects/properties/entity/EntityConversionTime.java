@@ -33,7 +33,7 @@ public class EntityConversionTime implements Property {
             "conversion_duration", "drowned_conversion_duration"
     };
 
-    private EntityConversionTime(EntityTag ent) {
+    public EntityConversionTime(EntityTag ent) {
         entity = ent;
     }
 
@@ -52,7 +52,7 @@ public class EntityConversionTime implements Property {
         return "conversion_duration";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.conversion_duration>
@@ -64,7 +64,7 @@ public class EntityConversionTime implements Property {
         // When this value hits 0, the conversion completes.
         // See also <@link tag EntityTag.in_water_duration>
         // -->
-        PropertyParser.<EntityConversionTime, DurationTag>registerTag(DurationTag.class, "conversion_duration", (attribute, object) -> {
+        PropertyParser.registerTag(EntityConversionTime.class, DurationTag.class, "conversion_duration", (attribute, object) -> {
             if (!object.isConverting()) {
                 attribute.echoError("This entity is not converting!");
                 return null;
@@ -77,13 +77,13 @@ public class EntityConversionTime implements Property {
         // @returns ElementTag(Boolean)
         // @group properties
         // @description
-        // Returns whether an entity is currently underoing a conversion process. This can be:
+        // Returns whether an entity is currently undergoing a conversion process. This can be:
         // A zombie villager being cured,
         // A zombie becoming a drowned (See also <@link tag EntityTag.in_water_duration>),
         // A husk becoming a zombie, or
         // A skeleton becoming a stray.
         // -->
-        PropertyParser.<EntityConversionTime, ElementTag>registerTag(ElementTag.class, "is_converting", (attribute, object) -> {
+        PropertyParser.registerTag(EntityConversionTime.class, ElementTag.class, "is_converting", (attribute, object) -> {
             return new ElementTag(object.isConverting());
         });
     }

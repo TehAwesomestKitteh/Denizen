@@ -28,7 +28,7 @@ public class EntityArrowDamage implements Property {
             "damage"
     };
 
-    private EntityArrowDamage(EntityTag entity) {
+    public EntityArrowDamage(EntityTag entity) {
         dentity = entity;
     }
 
@@ -48,7 +48,7 @@ public class EntityArrowDamage implements Property {
         return (Arrow) dentity.getBukkitEntity();
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.damage>
@@ -59,7 +59,7 @@ public class EntityArrowDamage implements Property {
         // Returns the damage that the arrow/trident will inflict.
         // NOTE: The actual damage dealt by the arrow/trident may be different depending on the projectile's flight speed.
         // -->
-        PropertyParser.<EntityArrowDamage, ElementTag>registerTag(ElementTag.class, "damage", (attribute, object) -> {
+        PropertyParser.registerTag(EntityArrowDamage.class, ElementTag.class, "damage", (attribute, object) -> {
             return new ElementTag(object.getArrow().getDamage());
         });
     }

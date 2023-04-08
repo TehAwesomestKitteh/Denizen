@@ -42,12 +42,10 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public StructureGrowsScriptEvent() {
-        instance = this;
         registerCouldMatcher("<'structure/plant'> grows (naturally)");
         registerCouldMatcher("<'structure/plant'> grows from bonemeal");
     }
 
-    public static StructureGrowsScriptEvent instance;
     public StructureGrowEvent event;
 
     @Override
@@ -81,11 +79,6 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
     }
 
     @Override
-    public String getName() {
-        return "StructureGrow";
-    }
-
-    @Override
     public ScriptEntryData getScriptEntryData() {
         return new BukkitScriptEntryData(event.getPlayer());
     }
@@ -98,7 +91,7 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
             case "location":
                 return new LocationTag(event.getLocation());
             case "structure":
-                return new ElementTag(event.getSpecies().name());
+                return new ElementTag(event.getSpecies());
             case "blocks":
                 ListTag blocks = new ListTag();
                 for (BlockState block : event.getBlocks()) {

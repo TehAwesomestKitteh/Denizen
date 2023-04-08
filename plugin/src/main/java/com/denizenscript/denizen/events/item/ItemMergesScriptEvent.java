@@ -33,11 +33,9 @@ public class ItemMergesScriptEvent extends BukkitScriptEvent implements Listener
     // -->
 
     public ItemMergesScriptEvent() {
-        instance = this;
         registerCouldMatcher("<item> merges");
     }
 
-    public static ItemMergesScriptEvent instance;
     public ItemTag item;
     public LocationTag location;
     public EntityTag entity;
@@ -45,18 +43,13 @@ public class ItemMergesScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!item.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, item)) {
             return false;
         }
         if (!runInCheck(path, location)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "ItemMerges";
     }
 
     @Override

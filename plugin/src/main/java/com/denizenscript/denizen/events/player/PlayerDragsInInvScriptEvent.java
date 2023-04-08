@@ -52,10 +52,8 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
     // -->
 
     public PlayerDragsInInvScriptEvent() {
-        instance = this;
     }
 
-    public static PlayerDragsInInvScriptEvent instance;
 
     public Inventory inventory;
     public ItemTag item;
@@ -90,11 +88,6 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
     }
 
     @Override
-    public String getName() {
-        return "PlayerDragsInInventory";
-    }
-
-    @Override
     public ScriptEntryData getScriptEntryData() {
         return new BukkitScriptEntryData(entity, null);
     }
@@ -122,7 +115,7 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
                 return InventoryTag.mirrorBukkitInventory(event.getView()
                         .getInventory(event.getRawSlots().stream().findFirst().orElse(0)));
             case "drag_type":
-                return new ElementTag(event.getType().name());
+                return new ElementTag(event.getType());
         }
         return super.getContext(name);
     }

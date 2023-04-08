@@ -28,7 +28,7 @@ public class EntityBasePlate implements Property {
             "base_plate"
     };
 
-    private EntityBasePlate(EntityTag entity) {
+    public EntityBasePlate(EntityTag entity) {
         dentity = entity;
     }
 
@@ -48,7 +48,7 @@ public class EntityBasePlate implements Property {
         return "base_plate";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.base_plate>
@@ -58,7 +58,7 @@ public class EntityBasePlate implements Property {
         // @description
         // If the entity is an armor stand, returns whether the armor stand has a base plate.
         // -->
-        PropertyParser.<EntityBasePlate, ElementTag>registerTag(ElementTag.class, "base_plate", (attribute, object) -> {
+        PropertyParser.registerTag(EntityBasePlate.class, ElementTag.class, "base_plate", (attribute, object) -> {
             return new ElementTag(object.getStand().hasBasePlate());
         });
     }

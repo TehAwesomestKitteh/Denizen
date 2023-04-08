@@ -41,26 +41,19 @@ public class ItemRecipeFormedScriptEvent extends BukkitScriptEvent implements Li
     // -->
 
     public ItemRecipeFormedScriptEvent() {
-        instance = this;
         registerCouldMatcher("<item> recipe formed");
     }
 
-    public static ItemRecipeFormedScriptEvent instance;
 
     public PrepareItemCraftEvent event;
     public ItemTag result;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!result.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, result)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "ItemRecipeFormed";
     }
 
     @Override

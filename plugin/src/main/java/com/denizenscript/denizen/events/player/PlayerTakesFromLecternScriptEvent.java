@@ -38,10 +38,8 @@ public class PlayerTakesFromLecternScriptEvent extends BukkitScriptEvent impleme
     // -->
 
     public PlayerTakesFromLecternScriptEvent() {
-        instance = this;
     }
 
-    public static PlayerTakesFromLecternScriptEvent instance;
     public LocationTag location;
     public ItemTag item;
     public PlayerTakeLecternBookEvent event;
@@ -59,18 +57,13 @@ public class PlayerTakesFromLecternScriptEvent extends BukkitScriptEvent impleme
 
     @Override
     public boolean matches(ScriptEvent.ScriptPath path) {
-        if (!item.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, item)) {
             return false;
         }
         if (!runInCheck(path, location)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerTakesFromLectern";
     }
 
     @Override

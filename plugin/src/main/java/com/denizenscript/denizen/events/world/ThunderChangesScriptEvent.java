@@ -29,12 +29,10 @@ public class ThunderChangesScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public ThunderChangesScriptEvent() {
-        instance = this;
         registerCouldMatcher("thunder changes|begins|clears");
         registerSwitches("in");
     }
 
-    public static ThunderChangesScriptEvent instance;
     public ThunderChangeEvent event;
 
     @Override
@@ -53,15 +51,10 @@ public class ThunderChangesScriptEvent extends BukkitScriptEvent implements List
         else if (!changeType.equals("changes")) {
             return false;
         }
-        if (path.switches.containsKey("in") && !new WorldTag(event.getWorld()).tryAdvancedMatcher(path.switches.get("in"))) {
+        if (!path.tryObjectSwitch("in", new WorldTag(event.getWorld()))) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "ThunderChanges";
     }
 
     @Override

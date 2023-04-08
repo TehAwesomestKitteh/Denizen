@@ -31,13 +31,13 @@ public class MaterialSwitchFace implements Property {
             "switch_face"
     };
 
-    private MaterialSwitchFace(MaterialTag _material) {
+    public MaterialSwitchFace(MaterialTag _material) {
         material = _material;
     }
 
     MaterialTag material;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <MaterialTag.switch_face>
@@ -48,8 +48,8 @@ public class MaterialSwitchFace implements Property {
         // Returns the current attach direction for a switch or other attachable material.
         // Output is "CEILING", "FLOOR", or "WALL".
         // -->
-        PropertyParser.<MaterialSwitchFace, ElementTag>registerStaticTag(ElementTag.class, "switch_face", (attribute, material) -> {
-            return new ElementTag(material.getFaceAttachable().getAttachedFace().name());
+        PropertyParser.registerStaticTag(MaterialSwitchFace.class, ElementTag.class, "switch_face", (attribute, material) -> {
+            return new ElementTag(material.getFaceAttachable().getAttachedFace());
         });
     }
 

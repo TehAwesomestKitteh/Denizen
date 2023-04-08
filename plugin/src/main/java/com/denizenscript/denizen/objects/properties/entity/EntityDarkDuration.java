@@ -28,7 +28,7 @@ public class EntityDarkDuration implements Property {
             "dark_duration"
     };
 
-    private EntityDarkDuration(EntityTag ent) {
+    public EntityDarkDuration(EntityTag ent) {
         entity = ent;
     }
 
@@ -48,7 +48,7 @@ public class EntityDarkDuration implements Property {
         return (GlowSquid) entity.getBukkitEntity();
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.dark_duration>
@@ -58,7 +58,7 @@ public class EntityDarkDuration implements Property {
         // @description
         // Returns the duration remaining before a glow squid starts glowing.
         // -->
-        PropertyParser.<EntityDarkDuration, DurationTag>registerTag(DurationTag.class, "dark_duration", (attribute, object) -> {
+        PropertyParser.registerTag(EntityDarkDuration.class, DurationTag.class, "dark_duration", (attribute, object) -> {
             return new DurationTag((long) object.getGlowSquid().getDarkTicksRemaining());
         });
     }

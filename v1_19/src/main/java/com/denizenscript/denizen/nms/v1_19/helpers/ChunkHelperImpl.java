@@ -2,8 +2,8 @@ package com.denizenscript.denizen.nms.v1_19.helpers;
 
 import com.denizenscript.denizen.nms.abstracts.BiomeNMS;
 import com.denizenscript.denizen.nms.v1_19.impl.BiomeNMSImpl;
-import com.denizenscript.denizen.utilities.implementation.DenizenCoreImplementation;
 import com.denizenscript.denizen.nms.interfaces.ChunkHelper;
+import com.denizenscript.denizencore.tags.TagManager;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
 import net.minecraft.core.Holder;
@@ -13,14 +13,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.bukkit.World;
 import org.bukkit.Chunk;
-import org.bukkit.craftbukkit.v1_19_R1.CraftChunk;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.CraftChunk;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
@@ -43,7 +41,7 @@ public class ChunkHelperImpl implements ChunkHelper {
 
     @Override
     public void changeChunkServerThread(World world) {
-        if (DenizenCoreImplementation.tagThread == null) {
+        if (TagManager.tagThread == null) {
             return;
         }
         if (resetServerThread != null) {
@@ -63,7 +61,7 @@ public class ChunkHelperImpl implements ChunkHelper {
 
     @Override
     public void restoreServerThread(World world) {
-        if (DenizenCoreImplementation.tagThread == null) {
+        if (TagManager.tagThread == null) {
             return;
         }
         if (resetServerThread == null) {
@@ -83,7 +81,7 @@ public class ChunkHelperImpl implements ChunkHelper {
 
     @Override
     public int[] getHeightMap(Chunk chunk) {
-        Heightmap map = ((CraftChunk) chunk).getHandle().heightmaps.get(Heightmap.Types.MOTION_BLOCKING);
+        Heightmap map = ((CraftChunk) chunk).getHandle(ChunkStatus.HEIGHTMAPS).heightmaps.get(Heightmap.Types.MOTION_BLOCKING);
         int[] outputMap = new int[256];
         for (int x = 0; x < 16; x++) {
             for (int y = 0; y < 16; y++) {
@@ -95,8 +93,8 @@ public class ChunkHelperImpl implements ChunkHelper {
 
     @Override
     public void setAllBiomes(Chunk chunk, BiomeNMS biome) {
-        Holder<Biome> nmsBiome = ((BiomeNMSImpl) biome).biomeBase;
-        LevelChunk nmsChunk = ((CraftChunk) chunk).getHandle();
+        Holder<Biome> nmsBiome = ((BiomeNMSImpl) biome).biomeHolder;
+        ChunkAccess nmsChunk = ((CraftChunk) chunk).getHandle(ChunkStatus.BIOMES);
         ChunkPos chunkcoordintpair = nmsChunk.getPos();
         int i = QuartPos.fromBlock(chunkcoordintpair.getMinBlockX());
         int j = QuartPos.fromBlock(chunkcoordintpair.getMinBlockZ());

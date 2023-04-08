@@ -1,7 +1,7 @@
 package com.denizenscript.denizen.scripts.commands.entity;
 
 import com.denizenscript.denizen.objects.PlayerTag;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.abstracts.AnimationHelper;
 import com.denizenscript.denizen.nms.interfaces.EntityAnimation;
@@ -52,7 +52,8 @@ public class AnimateCommand extends AbstractCommand {
     // POLAR_BEAR_START_STANDING, POLAR_BEAR_STOP_STANDING,
     // HORSE_BUCK, HORSE_START_STANDING, HORSE_STOP_STANDING,
     // IRON_GOLEM_ATTACK,
-    // VILLAGER_SHAKE_HEAD
+    // VILLAGER_SHAKE_HEAD,
+    // SWING_MAIN_HAND, SWING_OFF_HAND
     //
     // Note that the above list only applies where logical, EG 'WOLF_' animations only apply to wolves.
     //

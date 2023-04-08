@@ -3,7 +3,7 @@ package com.denizenscript.denizen.scripts.commands.world;
 import com.denizenscript.denizen.objects.MaterialTag;
 import com.denizenscript.denizen.objects.properties.material.MaterialDirectional;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.objects.Argument;
@@ -104,7 +104,7 @@ public class SignCommand extends AbstractCommand {
         if (!scriptEntry.hasObject("text")) {
             throw new InvalidArgumentsException("Must specify sign text!");
         }
-        scriptEntry.defaultObject("type", new ElementTag(Type.AUTOMATIC.name()));
+        scriptEntry.defaultObject("type", new ElementTag(Type.AUTOMATIC));
     }
 
     public void setWallSign(Block sign, BlockFace bf, MaterialTag material) {

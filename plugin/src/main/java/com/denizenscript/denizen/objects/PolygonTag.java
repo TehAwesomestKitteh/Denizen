@@ -1,5 +1,6 @@
 package com.denizenscript.denizen.objects;
 
+import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.utilities.NotedAreaTracker;
 import com.denizenscript.denizen.utilities.Settings;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
@@ -14,6 +15,7 @@ import com.denizenscript.denizencore.objects.notable.NoteManager;
 import com.denizenscript.denizencore.tags.Attribute;
 import com.denizenscript.denizencore.tags.ObjectTagProcessor;
 import com.denizenscript.denizencore.tags.TagContext;
+import com.denizenscript.denizencore.tags.TagManager;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
 import com.denizenscript.denizencore.utilities.YamlConfiguration;
 import org.bukkit.Location;
@@ -71,6 +73,8 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
     public String noteName = null, priorNoteName = null;
 
     public AbstractFlagTracker flagTracker = null;
+
+    public static boolean preferInclusive = false;
 
     public static class Corner {
         public double x, z;
@@ -132,9 +136,11 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         if (string.contains("@")) {
             return null;
         }
-        Notable saved = NoteManager.getSavedObject(string);
-        if (saved instanceof PolygonTag) {
-            return (PolygonTag) saved;
+        if (!TagManager.isStaticParsing) {
+            Notable saved = NoteManager.getSavedObject(string);
+            if (saved instanceof PolygonTag) {
+                return (PolygonTag) saved;
+            }
         }
         List<String> parts = CoreUtilities.split(string, ',');
         if (parts.size() < 3) {
@@ -219,6 +225,10 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
 
     @Override
     public boolean doesContainLocation(Location loc) {
+        return preferInclusive ? containsInclusive(loc) : containsPrecise(loc);
+    }
+
+    public boolean containsPrecise(Location loc) {
         if (loc.getWorld() == null) {
             return false;
         }
@@ -245,13 +255,65 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         return isInside;
     }
 
-    public List<LocationTag> generateFlatBlockShell(double y) {
+    public boolean containsInclusive(Location loc) {
+        if (loc.getWorld() == null) {
+            return false;
+        }
+        if (!loc.getWorld().getName().equals(world.getName())) {
+            return false;
+        }
+        int targetY = loc.getBlockY();
+        if (targetY < Math.floor(yMin) || targetY > Math.floor(yMax)) {
+            return false;
+        }
+        int targetX = loc.getBlockX();
+        int targetZ = loc.getBlockZ();
+        boolean isInside = false;
+        for (int i = 0; i < corners.size(); i++) {
+            Corner start = corners.get(i);
+            Corner end = (i + 1 == corners.size() ? corners.get(0) : corners.get(i + 1));
+            int xStart = (int) Math.floor(start.x);
+            int zStart = (int) Math.floor(start.z);
+            int xEnd = (int) Math.floor(end.x);
+            int zEnd = (int) Math.floor(end.z);
+            if (xEnd == targetX && zEnd == targetZ) {
+                return true; // exactly on corner
+            }
+            int x1, x2, z1, z2;
+            if (xEnd > xStart) {
+                x1 = xStart;
+                x2 = xEnd;
+                z1 = zStart;
+                z2 = zEnd;
+            }
+            else {
+                x1 = xEnd;
+                x2 = xStart;
+                z1 = zEnd;
+                z2 = zStart;
+            }
+            if (x1 <= targetX && targetX <= x2) {
+                long crossProduct = ((long) targetZ - (long) z1) * (long) (x2 - x1) - ((long) z2 - (long) z1) * (long) (targetX - x1);
+                if (crossProduct == 0) {
+                    if ((z1 <= targetZ) == (targetZ <= z2)) {
+                        return true; // exactly along edge
+                    }
+                }
+                else if (crossProduct < 0 && (x1 != targetX)) {
+                    isInside = !isInside;
+                }
+            }
+        }
+        return isInside;
+    }
+
+    public List<LocationTag> generateFlatBlockShell(double y, boolean inclusive) {
         int max = Settings.blockTagsMaxBlocks();
         ArrayList<LocationTag> toOutput = new ArrayList<>();
         for (int x = (int) Math.floor(boxMin.x); x < boxMax.x; x++) {
             for (int z = (int) Math.floor(boxMin.z); z < boxMax.z; z++) {
                 LocationTag possible = new LocationTag(x + 0.5, y, z + 0.5, world.getName());
-                if (doesContainLocation(possible)) {
+                if (inclusive ? containsInclusive(possible) : containsPrecise(possible)) {
                     toOutput.add(possible);
                 }
                 max--;
@@ -265,9 +327,13 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
 
     @Override
     public ListTag getShell() {
+        return getShellInternal(preferInclusive);
+    }
+
+    public ListTag getShellInternal(boolean inclusive) {
         int max = Settings.blockTagsMaxBlocks();
         ListTag addTo = new ListTag();
-        List<LocationTag> flatShell = generateFlatBlockShell(yMin);
+        List<LocationTag> flatShell = generateFlatBlockShell(yMin, inclusive);
         for (LocationTag loc : flatShell) {
             addTo.addObject(loc.clone());
         }
@@ -322,9 +388,13 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
 
     @Override
     public ListTag getBlocks(Predicate<Location> test) {
+        return getBlocksInternal(test, preferInclusive);
+    }
+
+    public ListTag getBlocksInternal(Predicate<Location> test, boolean inclusive) {
         int max = Settings.blockTagsMaxBlocks();
         ListTag addTo = new ListTag();
-        List<LocationTag> flatShell = generateFlatBlockShell(yMin);
+        List<LocationTag> flatShell = generateFlatBlockShell(yMin, inclusive);
         for (double y = yMin; y < yMax; y++) {
             for (LocationTag loc : flatShell) {
                 LocationTag newLoc = loc.clone();
@@ -448,11 +518,6 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
     String prefix = "Polygon";
 
     @Override
-    public String getObjectType() {
-        return "polygon";
-    }
-
-    @Override
     public String getPrefix() {
         return prefix;
     }
@@ -546,16 +611,20 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         return toReturn;
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         AbstractFlagTracker.registerFlagHandlers(tagProcessor);
-        AreaContainmentObject.registerTags(PolygonTag.class, tagProcessor);
+        AreaContainmentObject.register(PolygonTag.class, tagProcessor);
 
         // <--[tag]
         // @attribute <PolygonTag.max_y>
         // @returns ElementTag(Decimal)
         // @description
         // Returns the maximum Y level for this polygon.
+        // @example
+        // # For example, this might return something like:
+        // # "The maximum Y level for the polygon, 'my_polygon', is 73!"
+        // - narrate "The maximum Y level for the polygon, 'my_polygon', is <polygon[my_polygon].max_y>!"
         // -->
         tagProcessor.registerTag(ElementTag.class, "max_y", (attribute, polygon) -> {
             return new ElementTag(polygon.yMax);
@@ -566,6 +635,10 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns ElementTag(Decimal)
         // @description
         // Returns the minimum Y level for this polygon.
+        // @example
+        // # For example, this might return something like:
+        // # "The minimum Y level for the polygon, 'my_polygon', is 62!"
+        // - narrate "The minimum Y level for the polygon, 'my_polygon', is <polygon[my_polygon].min_y>!"
         // -->
         tagProcessor.registerTag(ElementTag.class, "min_y", (attribute, polygon) -> {
             return new ElementTag(polygon.yMin);
@@ -576,6 +649,10 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns ElementTag
         // @description
         // Gets the name of a noted PolygonTag. If the polygon isn't noted, this is null.
+        // @example
+        // # For example, this might return something like:
+        // # "The polygon you are currently in is noted as: my_polygon!"
+        // - narrate "The polygon you are currently in is noted as: <player.location.areas[polygons].first.note_name.if_null[null! You aren't in a polygon]>!"
         // -->
         tagProcessor.registerTag(ElementTag.class, "note_name", (attribute, polygon) -> {
             String noteName = NoteManager.getSavedId(polygon);
@@ -590,6 +667,9 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns ListTag(LocationTag)
         // @description
         // Returns a list of the polygon's corners, as locations with Y coordinate set to the y-min value.
+        // @example
+        // # Displays a debugblock at each corner of the polygon "my_polygon".
+        // - debugblock <polygon[my_polygon].corners>
         // -->
         tagProcessor.registerTag(ListTag.class, "corners", (attribute, polygon) -> {
             ListTag list = new ListTag();
@@ -604,6 +684,9 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns PolygonTag
         // @description
         // Returns a copy of the polygon, with all coordinates shifted by the given location-vector.
+        // @example
+        // # Notes the polygon "my_polygon" as "my_shifted_polygon" but shifted over by 25,25,25.
+        // - note <polygon[my_polygon].shift[25,25,25]> as:my_shifted_polygon
         // -->
         tagProcessor.registerTag(PolygonTag.class, "shift", (attribute, polygon) -> {
             if (!attribute.hasParam()) {
@@ -631,6 +714,11 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @mechanism PolygonTag.add_corner
         // @description
         // Returns a copy of the polygon, with the specified corner added to the end of the corner list.
+        // @example
+        // # Notes a new polygon with a new corner added.
+        // # If the new corner has a location of "10,66,-2", and "my_polygon" has corners "0.0,0.0", "7.0,7.0", and "-5.0,6.0",
+        // # then "my_new_polygon" will have corners  "0.0,0.0", "7.0,7.0", "-5.0,6.0", and "10.0,-2.0".
+        // - note <polygon[my_polygon].with_corner[10,66,-2]> as:my_new_polygon
         // -->
         tagProcessor.registerTag(PolygonTag.class, "with_corner", (attribute, polygon) -> {
             if (!attribute.hasParam()) {
@@ -650,6 +738,10 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns PolygonTag
         // @description
         // Returns a copy of the polygon, with the specified minimum-Y value.
+        // @example
+        // # Notes a new polygon from "my_polygon" with the minimum-Y value being 10.
+        // # For example, if "my_polygon" had a maximum-Y of 50 and a minimum-Y of 30, then "my_new_polygon" will have a maximum-Y of 50 and a minimum-Y of 10.
+        // - note <polygon[my_polygon].with_y_min[10]> as:my_new_polygon
         // -->
         tagProcessor.registerTag(PolygonTag.class, "with_y_min", (attribute, polygon) -> {
             if (!attribute.hasParam()) {
@@ -666,6 +758,10 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns PolygonTag
         // @description
         // Returns a copy of the polygon, with the specified maximum-Y value.
+        // @example
+        // # Notes a new polygon from "my_polygon" with the maximum-Y value being 10.
+        // # For example, if "my_polygon" had a maximum-Y of 50 and a minimum-Y of 30, then "my_new_polygon" will have a maximum-Y of 70 and a minimum-Y of 30.
+        // - note <polygon[my_polygon].with_y_max[70]> as:my_new_polygon
         // -->
         tagProcessor.registerTag(PolygonTag.class, "with_y_max", (attribute, polygon) -> {
             if (!attribute.hasParam()) {
@@ -682,6 +778,12 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns PolygonTag
         // @description
         // Returns a copy of the polygon, with the specified Y value included as part of the Y range (expanding the Y-min or Y-max as needed).
+        // @example
+        // # Notes "my_polygon" as "my_new_polygon" but with the player's Y location included in the Y range.
+        // # For example, if "my_polygon" has a maximum-Y of 80 and a minimum-Y of 60,
+        // # and the player's Y location was 95, then "my_new_polygon" will have a maximum-Y of 95 and a minimum-Y of 60.
+        // # However, if the player's Y location was 50, then the maximum-Y value would stay the same and the minimum-Y value would change to 50 instead.
+        // - note <polygon[my_polygon].include_y[<player.location.y>]> as:my_new_polygon
         // -->
         tagProcessor.registerTag(PolygonTag.class, "include_y", (attribute, polygon) -> {
             if (!attribute.hasParam()) {
@@ -700,6 +802,9 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns ListTag(LocationTag)
         // @description
         // Returns a list of locations along the 2D outline of this polygon, at the specified Y level (roughly a block-width of separation between each).
+        // @example
+        // # Plays the "flame" effect along the 2D outline of the polygon, "my_polygon" at the player's Y location.
+        // - playeffect effect:flame at:<polygon[my_polygon].outline_2d[<player.location.y>]> offset:0.0
         // -->
         tagProcessor.registerTag(ListTag.class, "outline_2d", (attribute, polygon) -> {
             if (!attribute.hasParam()) {
@@ -717,9 +822,94 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
         // @returns ListTag(LocationTag)
         // @description
         // Returns a list of locations along the 3D outline of this polygon (roughly a block-width of separation between each).
+        // @example
+        // # Plays the "flame" effect along the outline of the polygon, "my_polygon".
+        // - playeffect effect:flame at:<polygon[my_polygon].outline> offset:0.0
         // -->
         tagProcessor.registerTag(ListTag.class, "outline", (attribute, polygon) -> {
             return polygon.getOutline();
+        });
+
+        // <--[mechanism]
+        // @object PolygonTag
+        // @name add_corner
+        // @input LocationTag
+        // @description
+        // Adds a corner to the end of the polygon's corner list.
+        // @tags
+        // <PolygonTag.with_corner[<location>]>
+        // @example
+        // # Adjusts the polygon to have a new corner added.
+        // # If the new corner has a location of "10,66,-2", and "my_polygon" has corners "0.0,0.0", "7.0,7.0", and "-5.0,6.0",
+        // # then "my_new_polygon" will have corners  "0.0,0.0", "7.0,7.0", "-5.0,6.0", and "10.0,-2.0".
+        // - adjust <polygon[my_polygon]> add_corner:10,66,-2
+        // -->
+        tagProcessor.registerMechanism("add_corner", false, LocationTag.class, (object, mechanism, location) -> {
+            if (object.noteName != null) {
+                NotedAreaTracker.remove(object);
+            }
+            Corner newCorner = new Corner(location.getX(), location.getZ());
+            object.corners.add(newCorner);
+            object.recalculateToFit(newCorner);
+            if (object.noteName != null) {
+                NotedAreaTracker.add(object);
+            }
+        });
+
+        // <--[tag]
+        // @attribute <PolygonTag.contains_inclusive[<location>]>
+        // @returns ElementTag(Boolean)
+        // @description
+        // Returns a boolean indicating whether the specified location is inside this polygon.
+        // Uses block-inclusive containment: contains a wider section of blocks along the edge (this mode is equivalent to WorldEdit's block selection).
+        // @example
+        // - if <polygon[my_polygon].contains_inclusive[<player.location>]>:
+        //     - narrate "The player's location is contained within the polygon!"
+        // - else:
+        //     - narrate "The player's location is not contained within the polygon!"
+        // -->
+        tagProcessor.registerTag(ElementTag.class, LocationTag.class, "contains_inclusive", (attribute, polygon, loc) -> {
+            return new ElementTag(polygon.containsInclusive(loc));
+        }, "contains_location");
+
+        // <--[tag]
+        // @attribute <PolygonTag.blocks_inclusive[(<matcher>)]>
+        // @returns ListTag(LocationTag)
+        // @description
+        // Returns each block location within the polygon.
+        // Optionally, specify a material matcher to only return locations with that block type.
+        // Uses block-inclusive containment: contains a wider section of blocks along the edge (this mode is equivalent to WorldEdit's block selection).
+        // @example
+        // # Displays a debugblock at each block of wool contained within the polygon "my_polygon".
+        // - debugblock <polygon[my_polygon].blocks_inclusive[*wool]>
+        // -->
+        tagProcessor.registerTag(ListTag.class, "blocks_inclusive", (attribute, polygon) -> {
+            if (attribute.hasParam()) {
+                NMSHandler.chunkHelper.changeChunkServerThread(polygon.getWorld().getWorld());
+                try {
+                    String matcher = attribute.getParam();
+                    Predicate<Location> predicate = (l) -> new LocationTag(l).tryAdvancedMatcher(matcher);
+                    return polygon.getBlocksInternal(predicate, true);
+                }
+                finally {
+                    NMSHandler.chunkHelper.restoreServerThread(polygon.getWorld().getWorld());
+                }
+            }
+            return polygon.getBlocksInternal(null, true);
+        });
+
+        // <--[tag]
+        // @attribute <PolygonTag.shell_inclusive>
+        // @returns ListTag(LocationTag)
+        // @description
+        // Returns each block location on the 3D outer shell of the polygon.
+        // Uses block-inclusive containment: contains a wider section of blocks along the edge (this mode is equivalent to WorldEdit's block selection).
+        // @example
+        // # Plays the "flame" effect at the outer 3D shell of the polygon "my_polygon".
+        // - playeffect effect:flame at:<polygon[my_polygon].shell_inclusive> offset:0.0
+        // -->
+        tagProcessor.registerTag(ListTag.class, "shell_inclusive", (attribute, polygon) -> {
+            return polygon.getShellInternal(true);
         });
     }
 
@@ -740,30 +930,7 @@ public class PolygonTag implements ObjectTag, Cloneable, Notable, Adjustable, Ar
 
     @Override
     public void adjust(Mechanism mechanism) {
-
-        AbstractFlagTracker.tryFlagAdjusts(this, mechanism);
-
-        // <--[mechanism]
-        // @object PolygonTag
-        // @name add_corner
-        // @input LocationTag
-        // @description
-        // Adds a corner to the end of the polygon's corner list.
-        // @tags
-        // <PolygonTag.with_corner[<location>]>
-        // -->
-        if (mechanism.matches("add_corner") && mechanism.requireObject(LocationTag.class)) {
-            if (noteName != null) {
-                NotedAreaTracker.remove(this);
-            }
-            LocationTag loc = mechanism.valueAsType(LocationTag.class);
-            Corner newCorner = new Corner(loc.getX(), loc.getZ());
-            corners.add(newCorner);
-            recalculateToFit(newCorner);
-            if (noteName != null) {
-                NotedAreaTracker.add(this);
-            }
-        }
+        tagProcessor.processMechanism(this, mechanism);
     }
 
     @Override

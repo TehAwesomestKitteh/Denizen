@@ -29,6 +29,8 @@ public class PlayerHearsSoundScriptEvent extends BukkitScriptEvent implements Li
     //
     // @Location true
     //
+    // @Switch key:<sound_key> to only process the event if the sound matches the modern Minecraft sound key.
+    //
     // @Context
     // <context.sound_key> returns an ElementTag of the modern Minecraft sound key.
     // <context.sound_name> returns an ElementTag of the sound's Bukkit name.
@@ -46,6 +48,7 @@ public class PlayerHearsSoundScriptEvent extends BukkitScriptEvent implements Li
     public PlayerHearsSoundScriptEvent() {
         instance = this;
         registerCouldMatcher("player hears sound");
+        registerSwitches("key");
     }
 
     public static PlayerHearsSoundScriptEvent instance;
@@ -60,13 +63,11 @@ public class PlayerHearsSoundScriptEvent extends BukkitScriptEvent implements Li
     public float volume, pitch;
 
     @Override
-    public String getName() {
-        return "PlayerHearsSound";
-    }
-
-    @Override
     public boolean matches(ScriptPath path) {
         if (!runInCheck(path, location)) {
+            return false;
+        }
+        if (!runGenericSwitchCheck(path, "key", soundName)) {
             return false;
         }
         return super.matches(path);
@@ -95,7 +96,7 @@ public class PlayerHearsSoundScriptEvent extends BukkitScriptEvent implements Li
     public ObjectTag getContext(String name) {
         switch (name) {
             case "sound_key": return new ElementTag(soundName);
-            case "sound_name": return isCustom ? null : new ElementTag(SoundLookup.keyToSound.get(soundName).name());
+            case "sound_name": return isCustom ? null : new ElementTag(SoundLookup.keyToSound.get(soundName));
             case "category": return new ElementTag(category);
             case "is_custom": return new ElementTag(isCustom);
             case "source_entity": return entity == null ? null : new EntityTag(entity);

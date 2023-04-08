@@ -1,8 +1,9 @@
 package com.denizenscript.denizen.scripts.commands.player;
 
 import com.denizenscript.denizen.objects.EntityTag;
+import com.denizenscript.denizen.utilities.PaperAPITools;
 import com.denizenscript.denizen.utilities.ScoreboardHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.objects.Argument;
@@ -37,7 +38,6 @@ public class TeamCommand extends AbstractCommand {
     // The Team command allows you to control a scoreboard team.
     //
     // Use the "prefix" or "suffix" arguments to modify a team's playername prefix and suffix.
-    // NOTE: Prefixes and suffixes cannot be longer than 16 characters!
     //
     // The "entry" value can be a player's name to affect that player, or an entity's UUID to affect that entity.
     // You can alternately input a raw PlayerTag or EntityTag, and they will be automatically translated to the name/UUID internally.
@@ -187,7 +187,7 @@ public class TeamCommand extends AbstractCommand {
         }
         Team team = board.getTeam(name.asString());
         if (team == null) {
-            String low = CoreUtilities.toLowerCase(name.asString());
+            String low = name.asLowerString();
             team = board.getTeams().stream().filter(t -> CoreUtilities.toLowerCase(t.getName()).equals(low)).findFirst().orElse(null);
             if (team == null) {
                 team = board.registerNewTeam(name.asString());
@@ -210,8 +210,8 @@ public class TeamCommand extends AbstractCommand {
             }
         }
         if (option != null) {
-            String optName = CoreUtilities.toLowerCase(option.asString());
-            String statusName = CoreUtilities.toLowerCase(status.asString());
+            String optName = option.asLowerString();
+            String statusName = status.asLowerString();
             if (optName.equals("friendly_fire")) {
                 team.setAllowFriendlyFire(statusName.equals("always"));
             }
@@ -223,10 +223,10 @@ public class TeamCommand extends AbstractCommand {
             }
         }
         if (prefix != null) {
-            team.setPrefix(prefix.asString());
+            PaperAPITools.instance.setTeamPrefix(team, prefix.asString());
         }
         if (suffix != null) {
-            team.setSuffix(suffix.asString());
+            PaperAPITools.instance.setTeamSuffix(team, suffix.asString());
         }
         if (color != null) {
             team.setColor(ChatColor.valueOf(color.asString().toUpperCase()));

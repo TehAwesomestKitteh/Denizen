@@ -1,15 +1,19 @@
 package com.denizenscript.denizen.utilities;
 
 import com.denizenscript.denizen.nms.NMSHandler;
-import com.denizenscript.denizen.objects.ColorTag;
-import com.denizenscript.denizen.objects.properties.bukkit.BukkitElementProperties;
+import com.denizenscript.denizen.objects.properties.bukkit.BukkitElementExtensions;
+import com.denizenscript.denizencore.objects.core.ColorTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.utilities.AsciiMatcher;
 import com.denizenscript.denizencore.utilities.CoreConfiguration;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.*;
+import net.md_5.bungee.api.chat.hover.content.*;
+import net.md_5.bungee.chat.*;
 
 import java.util.List;
 
@@ -42,14 +46,14 @@ public class FormattedTextHelper {
 
     public static String escape(String input) {
         if (needsEscapeMatcher.containsAnyMatch(input)) {
-            input = input.replace("&", "&amp").replace(";", "&sc").replace("[", "&lb").replace("]", "&rb");
+            input = input.replace("&", "&amp").replace(";", "&sc").replace("[", "&lb").replace("]", "&rb").replace("\n", "&nl");
         }
         return input.replace(String.valueOf(ChatColor.COLOR_CHAR), "&ss");
     }
 
     public static String unescape(String input) {
         if (input.indexOf('&') != -1) {
-            return input.replace("&sc", ";").replace("&lb", "[").replace("&rb", "]").replace("&ss", String.valueOf(ChatColor.COLOR_CHAR)).replace("&amp", "&");
+            return input.replace("&sc", ";").replace("&lb", "[").replace("&rb", "]").replace("&nl", "\n").replace("&ss", String.valueOf(ChatColor.COLOR_CHAR)).replace("&amp", "&");
         }
         return input;
     }
@@ -71,7 +75,7 @@ public class FormattedTextHelper {
         return hasRootFormat(extra.get(0));
     }
 
-    public static String stringify(BaseComponent[] components, ChatColor baseColor) {
+    public static String stringify(BaseComponent[] components) {
         if (components == null) {
             return null;
         }
@@ -92,11 +96,7 @@ public class FormattedTextHelper {
         while (output.startsWith(POSSIBLE_RESET_PREFIX) && output.length() > 4 && colorCodeInvalidator.isMatch(output.charAt(3))) {
             output = output.substring(2);
         }
-        return output;
-    }
-
-    public static boolean boolNotNull(Boolean bool) {
-        return bool != null && bool;
+        return cleanRedundantCodes(output);
     }
 
     public static String stringifyRGBSpigot(String hex) {
@@ -115,31 +115,39 @@ public class FormattedTextHelper {
     }
 
     public static String stringify(BaseComponent component) {
+        return stringifySub(component, null);
+    }
+
+    public static String stringifySub(BaseComponent component, ChatColor parentColor) {
         if (component == null) {
             return null;
         }
         StringBuilder builder = new StringBuilder(128);
         ChatColor color = component.getColorRaw();
+        if (color == null) {
+            color = parentColor;
+        }
         if (color != null) {
             builder.append(color);
         }
-        if (boolNotNull(component.isBoldRaw())) {
+        if (component.isBold()) {
             builder.append(ChatColor.BOLD);
         }
-        if (boolNotNull(component.isItalicRaw())) {
+        if (component.isItalic()) {
             builder.append(ChatColor.ITALIC);
         }
-        if (boolNotNull(component.isStrikethroughRaw())) {
+        if (component.isStrikethrough()) {
             builder.append(ChatColor.STRIKETHROUGH);
         }
-        if (boolNotNull(component.isUnderlinedRaw())) {
+        if (component.isUnderlined()) {
             builder.append(ChatColor.UNDERLINE);
         }
-        if (boolNotNull(component.isObfuscatedRaw())) {
+        if (component.isObfuscated()) {
             builder.append(ChatColor.MAGIC);
         }
-        if (component.getFontRaw() != null) {
-            builder.append(ChatColor.COLOR_CHAR).append("[font=").append(component.getFontRaw()).append("]");
+        boolean hasFont = component.getFont() != null;
+        if (hasFont) {
+            builder.append(ChatColor.COLOR_CHAR).append("[font=").append(component.getFont()).append("]");
         }
         boolean hasInsertion = component.getInsertion() != null;
         if (hasInsertion) {
@@ -182,7 +190,7 @@ public class FormattedTextHelper {
         List<BaseComponent> after = component.getExtra();
         if (after != null) {
             for (BaseComponent afterComponent : after) {
-                builder.append(stringify(afterComponent));
+                builder.append(stringifySub(afterComponent, color));
             }
         }
         if (hasClick) {
@@ -194,6 +202,9 @@ public class FormattedTextHelper {
         if (hasInsertion) {
             builder.append(ChatColor.COLOR_CHAR + "[/insertion]");
         }
+        if (hasFont) {
+            builder.append(ChatColor.COLOR_CHAR + "[reset=font]");
+        }
         builder.append(RESET);
         String output = builder.toString();
         return cleanRedundantCodes(output);
@@ -201,13 +212,23 @@ public class FormattedTextHelper {
 
     public static final String RESET = ChatColor.RESET.toString(), POSSIBLE_RESET_PREFIX = RESET + ChatColor.COLOR_CHAR;
 
-    public static TextComponent copyFormatToNewText(TextComponent last) {
+    private static Boolean procBool(Boolean input, boolean optimize) {
+        if (input == null) {
+            return null;
+        }
+        if (optimize) {
+            return input ? true : null;
+        }
+        return input;
+    }
+
+    public static TextComponent copyFormatToNewText(TextComponent last, boolean optimize) {
         TextComponent toRet = new TextComponent();
-        toRet.setObfuscated(last.isObfuscatedRaw());
-        toRet.setBold(last.isBoldRaw());
-        toRet.setStrikethrough(last.isStrikethroughRaw());
-        toRet.setUnderlined(last.isUnderlinedRaw());
-        toRet.setItalic(last.isItalicRaw());
+        toRet.setObfuscated(procBool(last.isObfuscatedRaw(), optimize));
+        toRet.setBold(procBool(last.isBoldRaw(), optimize));
+        toRet.setStrikethrough(procBool(last.isStrikethroughRaw(), optimize));
+        toRet.setUnderlined(procBool(last.isUnderlinedRaw(), optimize));
+        toRet.setItalic(procBool(last.isItalicRaw(), optimize));
         toRet.setColor(last.getColorRaw());
         return toRet;
     }
@@ -356,7 +377,7 @@ public class FormattedTextHelper {
                             root.addExtra(nextText);
                         }
                         nextText = getCleanRef();
-                        nextText.setColor(ChatColor.of(color.toString()));
+                        nextText.setColor(ChatColor.of(CoreUtilities.toUpperCase(color.toString())));
                         firstChar += 12;
                         lastStart = firstChar + 2;
                     }
@@ -375,7 +396,7 @@ public class FormattedTextHelper {
                     if (!nextText.getText().isEmpty()) {
                         root.addExtra(nextText);
                     }
-                    nextText = copyFormatToNewText(nextText);
+                    nextText = copyFormatToNewText(nextText, false);
                     if (c == 'k' || c == 'K') {
                         nextText.setObfuscated(true);
                     }
@@ -407,6 +428,16 @@ public class FormattedTextHelper {
         if (str == null) {
             return null;
         }
+        try {
+            return parseInternal(str, baseColor, cleanBase, false);
+        }
+        catch (Throwable ex) {
+            Debug.echoError(ex);
+        }
+        return new BaseComponent[]{new TextComponent(str)};
+    }
+
+    public static BaseComponent[] parseInternal(String str, ChatColor baseColor, boolean cleanBase, boolean optimize) {
         str = CoreUtilities.clearNBSPs(str);
         int firstChar = str.indexOf(ChatColor.COLOR_CHAR);
         if (firstChar == -1) {
@@ -421,29 +452,29 @@ public class FormattedTextHelper {
         }
         str = cleanRedundantCodes(str);
         if (cleanBase && str.length() < 512) {
-            if (str.equals("jeb_")) { // attempted compat with rainbow sheep, does not actually work but doesn't hurt to keep
-                return new BaseComponent[] { new TextComponent("jeb_") };
-            }
             if (!str.contains(ChatColor.COLOR_CHAR + "[") && !str.contains("://")) {
                 return parseSimpleColorsOnly(str);
             }
             // Ensure compat with certain weird vanilla translate strings.
-            if (str.startsWith(ChatColor.COLOR_CHAR + "[translate=") && str.endsWith("]") && str.indexOf(']') == str.length() - 1) {
+            if (str.startsWith(ChatColor.COLOR_CHAR + "[translate=") && str.indexOf(']') == str.length() - 1) {
                 String translatable = str.substring("&[translate=".length(), str.length() - 1);
                 TranslatableComponent component = new TranslatableComponent();
                 List<String> innardParts = CoreUtilities.split(translatable, ';');
                 component.setTranslate(unescape(innardParts.get(0)));
                 for (int i = 1; i < innardParts.size(); i++) {
-                    for (BaseComponent subComponent : parse(unescape(innardParts.get(i)), baseColor, false)) {
+                    for (BaseComponent subComponent : parseInternal(unescape(innardParts.get(i)), baseColor, false, optimize)) {
                         component.addWith(subComponent);
                     }
                 }
                 return new BaseComponent[] { component };
             }
         }
+        if (!optimize) {
+            optimize = str.contains(ChatColor.COLOR_CHAR + "[optimize=true]");
+        }
         TextComponent root = new TextComponent();
         TextComponent base = new TextComponent();
-        if (cleanBase) {
+        if (cleanBase && !optimize) {
             base.setBold(false);
             base.setItalic(false);
             base.setStrikethrough(false);
@@ -483,13 +514,13 @@ public class FormattedTextHelper {
                         nextText.setText(nextText.getText() + str.substring(started, i));
                         base.addExtra(nextText);
                         lastText = nextText;
-                        nextText = copyFormatToNewText(lastText);
+                        nextText = copyFormatToNewText(lastText, optimize);
                         nextText.setText("");
                         if (innardType.equals("score") && innardParts.size() == 2) {
                             ScoreComponent component = new ScoreComponent(unescape(innardBase.get(1)), unescape(innardParts.get(0)), unescape(innardParts.get(1)));
                             lastText.addExtra(component);
                         }
-                        else if (innardType.equals("keybind")) {
+                        else if (innardType.equals("keybind") && Utilities.matchesNamespacedKey(innardBase.get(1))) {
                             KeybindComponent component = new KeybindComponent();
                             component.setKeybind(unescape(innardBase.get(1)));
                             lastText.addExtra(component);
@@ -502,36 +533,37 @@ public class FormattedTextHelper {
                             TranslatableComponent component = new TranslatableComponent();
                             component.setTranslate(unescape(innardBase.get(1)));
                             for (String extra : innardParts) {
-                                for (BaseComponent subComponent : parse(unescape(extra), baseColor, false)) {
+                                for (BaseComponent subComponent : parseInternal(unescape(extra), baseColor, false, optimize)) {
                                     component.addWith(subComponent);
                                 }
                             }
                             lastText.addExtra(component);
                         }
                         else if (innardType.equals("click") && innardParts.size() == 1) {
-                            int endIndex = findEndIndexFor(str, "click", i + 5);
+                            int endIndex = findEndIndexFor(str, "click", endBracket);
                             if (endIndex == -1) {
                                 continue;
                             }
                             TextComponent clickableText = new TextComponent();
-                            clickableText.setClickEvent(new ClickEvent(ClickEvent.Action.valueOf(innardBase.get(1).toUpperCase()), unescape(innardParts.get(0))));
-                            for (BaseComponent subComponent : parse(str.substring(endBracket + 1, endIndex), baseColor, false)) {
+                            ClickEvent.Action action = ElementTag.asEnum(ClickEvent.Action.class, innardBase.get(1));
+                            clickableText.setClickEvent(new ClickEvent(action == null ? ClickEvent.Action.SUGGEST_COMMAND : action, unescape(innardParts.get(0))));
+                            for (BaseComponent subComponent : parseInternal(str.substring(endBracket + 1, endIndex), baseColor, false, optimize)) {
                                 clickableText.addExtra(subComponent);
                             }
                             lastText.addExtra(clickableText);
                             endBracket = endIndex + "&[/click".length();
                         }
                         else if (innardType.equals("hover")) {
-                            int endIndex = findEndIndexFor(str, "hover", i + 5);
+                            int endIndex = findEndIndexFor(str, "hover", endBracket);
                             if (endIndex == -1) {
                                 continue;
                             }
                             TextComponent hoverableText = new TextComponent();
-                            HoverEvent.Action action = HoverEvent.Action.valueOf(innardBase.get(1).toUpperCase());
-                            if (HoverFormatHelper.processHoverInput(action, hoverableText, innardParts.get(0))) {
+                            HoverEvent.Action action = ElementTag.asEnum(HoverEvent.Action.class, innardBase.get(1));
+                            if (HoverFormatHelper.processHoverInput(action == null ? HoverEvent.Action.SHOW_TEXT : action, hoverableText, innardParts.get(0))) {
                                 continue;
                             }
-                            for (BaseComponent subComponent : parse(str.substring(endBracket + 1, endIndex), baseColor, false)) {
+                            for (BaseComponent subComponent : parseInternal(str.substring(endBracket + 1, endIndex), baseColor, false, optimize)) {
                                 hoverableText.addExtra(subComponent);
                             }
                             lastText.addExtra(hoverableText);
@@ -548,7 +580,7 @@ public class FormattedTextHelper {
                             }
                             TextComponent insertableText = new TextComponent();
                             insertableText.setInsertion(unescape(innardBase.get(1)));
-                            for (BaseComponent subComponent : parse(str.substring(endBracket + 1, endIndex), baseColor, false)) {
+                            for (BaseComponent subComponent : parseInternal(str.substring(endBracket + 1, endIndex), baseColor, false, optimize)) {
                                 insertableText.addExtra(subComponent);
                             }
                             lastText.addExtra(insertableText);
@@ -587,20 +619,20 @@ public class FormattedTextHelper {
                                 color = ChatColor.getByChar(colorChar.charAt(0));
                             }
                             else if (colorChar.length() == 7) {
-                                color = ChatColor.of(colorChar);
+                                color = ChatColor.of(CoreUtilities.toUpperCase(colorChar));
                             }
                             else if (CoreConfiguration.debugVerbose) {
                                 Debug.echoError("Text parse issue: cannot interpret color '" + innardBase.get(1) + "'.");
                             }
                             if (color != null) {
-                                int endIndex = findEndIndexFor(str, "[color=", "[reset=color]", i + 1);
+                                int endIndex = findEndIndexFor(str, "[color=", "[reset=color]", endBracket);
                                 if (endIndex == -1) {
                                     nextText.setColor(color);
                                 }
                                 else {
                                     TextComponent colorText = new TextComponent();
                                     colorText.setColor(color);
-                                    for (BaseComponent subComponent : parse(str.substring(endBracket + 1, endIndex), color, false)) {
+                                    for (BaseComponent subComponent : parseInternal(str.substring(endBracket + 1, endIndex), color, false, optimize)) {
                                         colorText.addExtra(subComponent);
                                     }
                                     lastText.addExtra(colorText);
@@ -612,7 +644,7 @@ public class FormattedTextHelper {
                             String from = innardBase.get(1), to = innardParts.get(0), style = innardParts.get(1);
                             ColorTag fromColor = ColorTag.valueOf(from, CoreUtilities.noDebugContext);
                             ColorTag toColor = ColorTag.valueOf(to, CoreUtilities.noDebugContext);
-                            BukkitElementProperties.GradientStyle styleEnum = new ElementTag(style).asEnum(BukkitElementProperties.GradientStyle.class);
+                            BukkitElementExtensions.GradientStyle styleEnum = new ElementTag(style).asEnum(BukkitElementExtensions.GradientStyle.class);
                             if (fromColor == null || toColor == null || styleEnum == null) {
                                 if (CoreConfiguration.debugVerbose) {
                                     Debug.echoError("Text parse issue: cannot interpret gradient input '" + innards + "'.");
@@ -623,27 +655,30 @@ public class FormattedTextHelper {
                                 if (endIndex == -1) {
                                     endIndex = str.length();
                                 }
-                                String gradientText = BukkitElementProperties.doGradient(str.substring(endBracket + 1, endIndex), fromColor, toColor, styleEnum);
-                                for (BaseComponent subComponent : parse(gradientText, baseColor, false)) {
+                                String gradientText = BukkitElementExtensions.doGradient(str.substring(endBracket + 1, endIndex), fromColor, toColor, styleEnum);
+                                for (BaseComponent subComponent : parseInternal(gradientText, baseColor, false, optimize)) {
                                     lastText.addExtra(subComponent);
                                 }
                                 endBracket = endIndex - 1;
                             }
                         }
-                        else if (innardType.equals("font")) {
-                            int endIndex = findEndIndexFor(str, "[font=", "[reset=font]", i + 1);
+                        else if (innardType.equals("font") && Utilities.matchesNamespacedKey(innardBase.get(1))) {
+                            int endIndex = findEndIndexFor(str, "[font=", "[reset=font]", endBracket);
                             if (endIndex == -1) {
                                 nextText.setFont(innardBase.get(1));
                             }
                             else {
                                 TextComponent fontText = new TextComponent();
                                 fontText.setFont(innardBase.get(1));
-                                for (BaseComponent subComponent : parse(str.substring(endBracket + 1, endIndex), baseColor, false)) {
+                                for (BaseComponent subComponent : parseInternal(str.substring(endBracket + 1, endIndex), baseColor, false, optimize)) {
                                     fontText.addExtra(subComponent);
                                 }
                                 lastText.addExtra(fontText);
                                 endBracket = endIndex + "&[reset=font".length();
                             }
+                        }
+                        else if (innardType.equals("optimize")) {
+                            // Ignore
                         }
                         else {
                             if (CoreConfiguration.debugVerbose) {
@@ -697,7 +732,7 @@ public class FormattedTextHelper {
                         base.addExtra(nextText);
                     }
                     nextText = new TextComponent();
-                    nextText.setColor(ChatColor.of(color.toString()));
+                    nextText.setColor(ChatColor.of(CoreUtilities.toUpperCase(color.toString())));
                     i += 13;
                     started = i + 1;
                     continue;
@@ -707,7 +742,7 @@ public class FormattedTextHelper {
                     if (!nextText.getText().isEmpty()) {
                         base.addExtra(nextText);
                     }
-                    nextText = copyFormatToNewText(nextText);
+                    nextText = copyFormatToNewText(nextText, optimize);
                     if (code == 'k' || code == 'K') {
                         nextText.setObfuscated(true);
                     }
@@ -730,7 +765,7 @@ public class FormattedTextHelper {
             else if (i + "https://a.".length() < chars.length && chars[i] == 'h' && chars[i + 1] == 't' && chars[i + 2] == 't' && chars[i  + 3] == 'p') {
                 String subStr = str.substring(i, i + "https://a.".length());
                 if (subStr.startsWith("https://") || subStr.startsWith("http://")) {
-                    int nextSpace = CoreUtilities.indexOfAny(str, i, ' ', '\t', '\n');
+                    int nextSpace = CoreUtilities.indexOfAny(str, i, ' ', '\t', '\n', ChatColor.COLOR_CHAR);
                     if (nextSpace == -1) {
                         nextSpace = str.length();
                     }
@@ -743,7 +778,7 @@ public class FormattedTextHelper {
                     TextComponent clickableText = new TextComponent(url);
                     clickableText.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
                     lastText.addExtra(clickableText);
-                    i = nextSpace;
+                    i = nextSpace - 1;
                     started = nextSpace;
                     continue;
                 }
@@ -753,6 +788,63 @@ public class FormattedTextHelper {
         if (!nextText.getText().isEmpty()) {
             base.addExtra(nextText);
         }
-        return new BaseComponent[] { cleanBase ? root : base };
+        return new BaseComponent[] { cleanBase && !optimize ? root : base };
+    }
+
+    public static int indexOfLastColorBlockStart(String text) {
+        int result = text.lastIndexOf(ChatColor.COLOR_CHAR + "[");
+        if (result == -1 || text.indexOf(']', result + 2) != -1) {
+            return -1;
+        }
+        return result;
+    }
+
+    /**
+     * Equivalent to DebugInternals.trimMessage, with a special check:
+     * If a message is cut in the middle of a format block like "&[font=x:y]", cut that block entirely out.
+     * (This is needed because a snip in the middle of this will explode with parsing errors).
+     */
+    public static String bukkitSafeDebugTrimming(String message) {
+        int trimSize = CoreConfiguration.debugTrimLength;
+        if (message.length() > trimSize) {
+            int firstCut = (trimSize / 2) - 10, secondCut = message.length() - ((trimSize / 2) - 10);
+            String prePart = message.substring(0, firstCut);
+            String cutPart = message.substring(firstCut, secondCut);
+            String postPart = message.substring(secondCut);
+            int preEarlyCut = indexOfLastColorBlockStart(prePart);
+            if (preEarlyCut != -1) {
+                prePart = message.substring(0, preEarlyCut);
+            }
+            if (indexOfLastColorBlockStart(cutPart) != -1 || (preEarlyCut != -1 && cutPart.indexOf(']') == -1)) {
+                int lateCut = postPart.indexOf(']');
+                if (lateCut != -1) {
+                    postPart = postPart.substring(lateCut + 1);
+                }
+            }
+            message = prePart + "... *snip!*..." + postPart;
+        }
+        return message;
+    }
+
+    // Spigot ComponentSerializer
+    public static final Gson vanillaStyleSpigotComponentGSON = new GsonBuilder()
+            .registerTypeAdapter(BaseComponent.class, new ComponentSerializer())
+            .registerTypeAdapter(TextComponent.class, new TextComponentSerializer())
+            .registerTypeAdapter(TranslatableComponent.class, new TranslatableComponentSerializer())
+            .registerTypeAdapter(KeybindComponent.class, new KeybindComponentSerializer())
+            .registerTypeAdapter(ScoreComponent.class, new ScoreComponentSerializer())
+            .registerTypeAdapter(SelectorComponent.class, new SelectorComponentSerializer())
+            .registerTypeAdapter(Entity.class, new EntitySerializer())
+            .registerTypeAdapter(Text.class, new TextSerializer())
+            .registerTypeAdapter(Item.class, new ItemSerializer())
+            .registerTypeAdapter(ItemTag.class, new ItemTag.Serializer())
+            .disableHtmlEscaping() // Mojang
+            .create();
+
+    public static String componentToJson(BaseComponent[] components) {
+        if (components.length == 1) {
+            return vanillaStyleSpigotComponentGSON.toJson(components[0]);
+        }
+        return vanillaStyleSpigotComponentGSON.toJson(new TextComponent(components));
     }
 }

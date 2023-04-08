@@ -1,13 +1,14 @@
 package com.denizenscript.denizen.paper.properties;
 
 import com.denizenscript.denizen.objects.EntityTag;
-import com.denizenscript.denizencore.objects.Mechanism;
+import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.properties.Property;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.properties.PropertyParser;
 import com.destroystokyo.paper.entity.RangedEntity;
 
+@Deprecated
 public class EntityArmsRaised implements Property {
 
     public static boolean describes(ObjectTag entity) {
@@ -24,39 +25,15 @@ public class EntityArmsRaised implements Property {
         }
     }
 
-    public static final String[] handledMechs = new String[]{
-            "arms_raised"
-    };
-
-    private EntityArmsRaised(EntityTag _entity) {
+    public EntityArmsRaised(EntityTag _entity) {
         entity = _entity;
     }
 
     EntityTag entity;
 
-    public static void registerTags() {
-
-        // <--[tag]
-        // @attribute <EntityTag.arms_raised>
-        // @returns ElementTag(Boolean)
-        // @mechanism EntityTag.arms_raised
-        // @group properties
-        // @Plugin Paper
-        // @description
-        // Returns whether a ranged mob (skeleton, stray, wither skeleton, drowned, illusioner, or piglin) is "charging" up an attack (its arms are raised).
-        // -->
-        PropertyParser.<EntityArmsRaised, ElementTag>registerTag(ElementTag.class, "arms_raised", (attribute, object) -> {
-            return new ElementTag(object.getRanged().isChargingAttack());
-        });
-    }
-
-    public RangedEntity getRanged() {
-        return (RangedEntity) entity.getBukkitEntity();
-    }
-
     @Override
     public String getPropertyString() {
-        return String.valueOf(getRanged().isChargingAttack());
+        return null;
     }
 
     @Override
@@ -64,22 +41,43 @@ public class EntityArmsRaised implements Property {
         return "arms_raised";
     }
 
-    @Override
-    public void adjust(Mechanism mechanism) {
+    public static void register() {
+
+        // <--[tag]
+        // @attribute <EntityTag.arms_raised>
+        // @returns ElementTag(Boolean)
+        // @mechanism EntityTag.arms_raised
+        // @group properties
+        // @Plugin Paper
+        // @deprecated use 'aggressive'
+        // @description
+        // Deprecated in favor of <@link tag EntityTag.aggressive>.
+        // -->
+        PropertyParser.registerTag(EntityArmsRaised.class, ElementTag.class, "arms_raised", (attribute, object) -> {
+            BukkitImplDeprecations.entityArmsRaised.warn(attribute.context);
+            return new ElementTag(object.getRanged().isChargingAttack());
+        });
 
         // <--[mechanism]
         // @object EntityTag
         // @name arms_raised
         // @input ElementTag(Boolean)
         // @Plugin Paper
+        // @deprecated use 'aggressive'
         // @description
-        // Sets whether a ranged mob (skeleton, stray, wither skeleton, drowned, illusioner, or piglin) is "charging" up an attack (its arms are raised).
-        // Some entities may require <@link mechanism EntityTag.is_aware> to be set to false.
+        // Deprecated in favor of <@link mechanism EntityTag.aggressive>.
         // @tags
         // <EntityTag.arms_raised>
         // -->
-        if (mechanism.matches("arms_raised") && mechanism.requireBoolean()) {
-            getRanged().setChargingAttack(mechanism.getValue().asBoolean());
-        }
+        PropertyParser.registerMechanism(EntityArmsRaised.class, ElementTag.class, "arms_raised", (object, mechanism, input) -> {
+            BukkitImplDeprecations.entityArmsRaised.warn(mechanism.context);
+            if (mechanism.requireBoolean()) {
+                object.getRanged().setChargingAttack(input.asBoolean());
+            }
+        });
+    }
+
+    public RangedEntity getRanged() {
+        return (RangedEntity) entity.getBukkitEntity();
     }
 }

@@ -28,7 +28,7 @@ public class EntityArms implements Property {
             "arms"
     };
 
-    private EntityArms(EntityTag entity) {
+    public EntityArms(EntityTag entity) {
         dentity = entity;
     }
 
@@ -48,7 +48,7 @@ public class EntityArms implements Property {
         return (ArmorStand) dentity.getBukkitEntity();
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.arms>
@@ -58,7 +58,7 @@ public class EntityArms implements Property {
         // @description
         // If the entity is an armor stand, returns whether the armor stand has arms.
         // -->
-        PropertyParser.<EntityArms, ElementTag>registerTag(ElementTag.class, "arms", (attribute, object) -> {
+        PropertyParser.registerTag(EntityArms.class, ElementTag.class, "arms", (attribute, object) -> {
             return new ElementTag(object.getStand().hasArms());
         });
     }

@@ -41,10 +41,8 @@ public class BlockDropsItemScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public BlockDropsItemScriptEvent() {
-        instance = this;
     }
 
-    public static BlockDropsItemScriptEvent instance;
     public LocationTag location;
     public MaterialTag material;
     public BlockDropItemEvent event;
@@ -65,7 +63,7 @@ public class BlockDropsItemScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!material.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, material)) {
             return false;
         }
         String item = path.eventArgLowerAt(2);
@@ -85,11 +83,6 @@ public class BlockDropsItemScriptEvent extends BukkitScriptEvent implements List
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "BlockDropsItem";
     }
 
     @Override

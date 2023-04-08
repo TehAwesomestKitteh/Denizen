@@ -29,13 +29,13 @@ public class EntityPlayingDead implements Property {
         "playing_dead"
     };
 
-    private EntityPlayingDead(EntityTag _entity) {
+    public EntityPlayingDead(EntityTag _entity) {
         entity = _entity;
     }
 
     EntityTag entity;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.playing_dead>
@@ -45,7 +45,7 @@ public class EntityPlayingDead implements Property {
         // @description
         // If the entity is an axolotl, returns whether the entity is playing dead.
         // -->
-        PropertyParser.<EntityPlayingDead, ElementTag>registerTag(ElementTag.class, "playing_dead", (attribute, entity) -> {
+        PropertyParser.registerTag(EntityPlayingDead.class, ElementTag.class, "playing_dead", (attribute, entity) -> {
             return new ElementTag(((Axolotl) entity.entity.getBukkitEntity()).isPlayingDead());
         });
     }

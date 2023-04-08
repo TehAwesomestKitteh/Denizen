@@ -31,14 +31,14 @@ public class MaterialDrags implements Property {
             "drags"
     };
 
-    private MaterialDrags(MaterialTag _material) {
+    public MaterialDrags(MaterialTag _material) {
         material = _material;
     }
 
     MaterialTag material;
 
-    public static void registerTags() {
-        PropertyParser.<MaterialDrags, ElementTag>registerTag(ElementTag.class, "drags", (attribute, material) -> {
+    public static void register() {
+        PropertyParser.registerTag(MaterialDrags.class, ElementTag.class, "drags", (attribute, material) -> {
             BukkitImplDeprecations.materialDrags.warn(attribute.context);
             return new ElementTag(material.isDrag());
         });

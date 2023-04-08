@@ -1,7 +1,9 @@
 package com.denizenscript.denizen.utilities;
 
 import com.denizenscript.denizen.objects.*;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizen.objects.properties.bukkit.BukkitColorExtensions;
+import com.denizenscript.denizencore.objects.core.ColorTag;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.Argument;
 import com.denizenscript.denizencore.objects.ArgumentHelper;
 import com.denizenscript.denizencore.objects.ObjectTag;
@@ -26,7 +28,7 @@ public class Conversion {
     public static List<Color> convertColors(List<ColorTag> colors) {
         List<Color> newList = new ArrayList<>();
         for (ColorTag color : colors) {
-            newList.add(color.getColor());
+            newList.add(BukkitColorExtensions.getColor(color));
         }
         return newList;
     }

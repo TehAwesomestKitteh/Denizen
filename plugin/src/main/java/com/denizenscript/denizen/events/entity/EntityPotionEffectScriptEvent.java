@@ -39,7 +39,7 @@ public class EntityPotionEffectScriptEvent extends BukkitScriptEvent implements 
     // <context.effect_type> returns the name of the modified potion effect type.
     //
     // @Determine
-    // "OVERRIDE:" + ElementTag(Boolean) to set whether the new potion effect should override.
+    // "OVERRIDE:<ElementTag(Boolean)>" to set whether the new potion effect should override.
     //
     // @Player when the entity that has changed is a player.
     //
@@ -48,13 +48,11 @@ public class EntityPotionEffectScriptEvent extends BukkitScriptEvent implements 
     // -->
 
     public EntityPotionEffectScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> potion effects modified");
         registerCouldMatcher("<entity> potion effects <'change_action'>");
         registerSwitches("cause", "effect");
     }
 
-    public static EntityPotionEffectScriptEvent instance;
     public EntityTag entity;
     public EntityPotionEffectEvent event;
 
@@ -94,11 +92,6 @@ public class EntityPotionEffectScriptEvent extends BukkitScriptEvent implements 
     }
 
     @Override
-    public String getName() {
-        return "PotionEffectsModified";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
         if (determinationObj instanceof ElementTag) {
             String lower = CoreUtilities.toLowerCase(determinationObj.toString());
@@ -121,10 +114,10 @@ public class EntityPotionEffectScriptEvent extends BukkitScriptEvent implements 
             return entity.getDenizenObject();
         }
         else if (name.equals("cause")) {
-            return new ElementTag(event.getCause().name());
+            return new ElementTag(event.getCause());
         }
         else if (name.equals("action")) {
-            return new ElementTag(event.getAction().name());
+            return new ElementTag(event.getAction());
         }
         else if (name.equals("effect_type")) {
             return new ElementTag(event.getModifiedType().getName());

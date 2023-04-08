@@ -31,11 +31,9 @@ public class ItemDespawnsScriptEvent extends BukkitScriptEvent implements Listen
     // -->
 
     public ItemDespawnsScriptEvent() {
-        instance = this;
         registerCouldMatcher("<item> despawns");
     }
 
-    public static ItemDespawnsScriptEvent instance;
     public ItemTag item;
     public LocationTag location;
     public EntityTag entity;
@@ -43,18 +41,13 @@ public class ItemDespawnsScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!item.tryAdvancedMatcher(path.eventArgAt(0))) {
+        if (!path.tryArgObject(0, item)) {
             return false;
         }
         if (!runInCheck(path, location)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "ItemDespawns";
     }
 
     @Override

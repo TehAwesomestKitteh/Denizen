@@ -37,7 +37,7 @@ public class EntityDisabledSlots implements Property {
             "disabled_slots_raw", "disabled_slots"
     };
 
-    private EntityDisabledSlots(EntityTag entity) {
+    public EntityDisabledSlots(EntityTag entity) {
         dentity = entity;
     }
 
@@ -46,7 +46,7 @@ public class EntityDisabledSlots implements Property {
     public enum Action {
         ALL(0), REMOVE(8), PLACE(16);
 
-        private final int id;
+        public final int id;
 
         Action(int id) {
             this.id = id;
@@ -57,7 +57,7 @@ public class EntityDisabledSlots implements Property {
         }
     }
 
-    private ListTag getDisabledSlots() {
+    public ListTag getDisabledSlots() {
         Map<EquipmentSlot, Set<Action>> map = CustomNBT.getDisabledSlots(dentity.getBukkitEntity());
         ListTag list = new ListTag();
         for (Map.Entry<EquipmentSlot, Set<Action>> entry : map.entrySet()) {
@@ -68,13 +68,13 @@ public class EntityDisabledSlots implements Property {
         return list;
     }
 
-    private MapTag getDisabledSlotsMap() {
+    public MapTag getDisabledSlotsMap() {
         Map<EquipmentSlot, Set<Action>> map = CustomNBT.getDisabledSlots(dentity.getBukkitEntity());
         MapTag mapTag = new MapTag();
         for (Map.Entry<EquipmentSlot, Set<Action>> entry : map.entrySet()) {
             ListTag actions = new ListTag();
             for (Action action : entry.getValue()) {
-                actions.addObject(new ElementTag(action.name()));
+                actions.addObject(new ElementTag(action));
             }
             mapTag.putObject(entry.getKey().name(), actions);
         }
@@ -92,7 +92,7 @@ public class EntityDisabledSlots implements Property {
         return "disabled_slots";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.disabled_slots>
@@ -103,7 +103,7 @@ public class EntityDisabledSlots implements Property {
         // @description
         // Deprecated in favor of <@link tag EntityTag.disabled_slots_data>.
         // -->
-        PropertyParser.<EntityDisabledSlots, ObjectTag>registerTag(ObjectTag.class, "disabled_slots", (attribute, object) -> {
+        PropertyParser.registerTag(EntityDisabledSlots.class, ObjectTag.class, "disabled_slots", (attribute, object) -> {
 
             // <--[tag]
             // @attribute <EntityTag.disabled_slots.raw>
@@ -132,7 +132,7 @@ public class EntityDisabledSlots implements Property {
         // @description
         // If the entity is an armor stand, returns its disabled slots as a map of slot names to list of actions.
         // -->
-        PropertyParser.<EntityDisabledSlots, MapTag>registerTag(MapTag.class, "disabled_slots_data", (attribute, object) -> {
+        PropertyParser.registerTag(EntityDisabledSlots.class, MapTag.class, "disabled_slots_data", (attribute, object) -> {
             return object.getDisabledSlotsMap();
         });
     }

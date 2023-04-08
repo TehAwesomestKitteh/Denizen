@@ -1,11 +1,10 @@
 package com.denizenscript.denizen.scripts.commands.world;
 
 import com.denizenscript.denizen.Denizen;
-import com.denizenscript.denizen.nms.NMSVersion;
 import com.denizenscript.denizen.objects.*;
 import com.denizenscript.denizen.utilities.Utilities;
 import com.denizenscript.denizen.utilities.command.TabCompleteHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.objects.*;
@@ -414,10 +413,8 @@ public class ModifyBlockCommand extends AbstractCommand implements Listener, Hol
                 return;
             }
         }
+        location = location.getBlockLocation();
         World world = location.getWorld();
-        location.setX(location.getBlockX());
-        location.setY(location.getBlockY());
-        location.setZ(location.getBlockZ());
         if (source != null) {
             Event event;
             if (material.getMaterial() == Material.AIR) {
@@ -478,12 +475,10 @@ public class ModifyBlockCommand extends AbstractCommand implements Listener, Hol
             return;
         }
         if (natural != null && material.getMaterial() == Material.AIR) {
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_17)) {
-                int xp = NMSHandler.blockHelper.getExpDrop(location.getBlock(), natural.getItemStack());
-                if (xp > 0) {
-                    ExperienceOrb orb = (ExperienceOrb) location.getWorld().spawnEntity(location, EntityType.EXPERIENCE_ORB);
-                    orb.setExperience(xp);
-                }
+            int xp = NMSHandler.blockHelper.getExpDrop(location.getBlock(), natural.getItemStack());
+            if (xp > 0) {
+                ExperienceOrb orb = (ExperienceOrb) location.getWorld().spawnEntity(location, EntityType.EXPERIENCE_ORB);
+                orb.setExperience(xp);
             }
             location.getBlock().breakNaturally(natural.getItemStack());
         }

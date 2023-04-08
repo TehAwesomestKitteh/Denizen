@@ -31,16 +31,14 @@ public class ExperienceBottleBreaksScriptEvent extends BukkitScriptEvent impleme
     // <context.show_effect> returns whether the effect should be shown.
     //
     // @Determine
-    // "EXPERIENCE:" + ElementTag(Number) to specify the amount of experience to be created.
-    // "EFFECT:" + ElementTag(Boolean) to specify if the particle effects will be shown.
+    // "EXPERIENCE:<ElementTag(Number)>" to specify the amount of experience to be created.
+    // "EFFECT:<ElementTag(Boolean)>" to specify if the particle effects will be shown.
     //
     // -->
 
     public ExperienceBottleBreaksScriptEvent() {
-        instance = this;
     }
 
-    public static ExperienceBottleBreaksScriptEvent instance;
     public ExpBottleEvent event;
 
     @Override
@@ -57,11 +55,6 @@ public class ExperienceBottleBreaksScriptEvent extends BukkitScriptEvent impleme
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "ExperienceBottleBreaks";
     }
 
     @Override

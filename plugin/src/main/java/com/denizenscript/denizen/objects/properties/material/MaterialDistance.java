@@ -31,13 +31,13 @@ public class MaterialDistance implements Property {
             "distance"
     };
 
-    private MaterialDistance(MaterialTag _material) {
+    public MaterialDistance(MaterialTag _material) {
         material = _material;
     }
 
     MaterialTag material;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <MaterialTag.distance>
@@ -48,7 +48,7 @@ public class MaterialDistance implements Property {
         // Returns the horizontal distance between a scaffolding block and the nearest scaffolding block placed above a 'bottom' scaffold,
         // or between a leaves block and the nearest log (a distance of 7 will cause a leaf to decay if 'persistent' is also false, less than 7 will prevent decay).
         // -->
-        PropertyParser.<MaterialDistance, ElementTag>registerStaticTag(ElementTag.class, "distance", (attribute, material) -> {
+        PropertyParser.registerStaticTag(MaterialDistance.class, ElementTag.class, "distance", (attribute, material) -> {
             return new ElementTag(material.getDistance());
         });
     }

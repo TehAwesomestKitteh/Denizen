@@ -3,7 +3,7 @@ package com.denizenscript.denizen.scripts.commands.item;
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.utilities.command.TabCompleteHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.ItemTag;
 import com.denizenscript.denizen.objects.LocationTag;
@@ -162,7 +162,7 @@ public class DisplayItemCommand extends AbstractCommand implements Listener {
         }
         final UUID itemUUID = dropped.getUniqueId();
         protectedEntities.add(itemUUID);
-        scriptEntry.addObject("dropped", new EntityTag(dropped));
+        scriptEntry.saveObject("dropped", new EntityTag(dropped));
         if (ticks > 0) {
             Bukkit.getScheduler().scheduleSyncDelayedTask(Denizen.getInstance(),
                     () -> {

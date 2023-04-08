@@ -28,7 +28,7 @@ public class EntityFireworkLifetime implements Property {
             "firework_lifetime"
     };
 
-    private EntityFireworkLifetime(EntityTag entity) {
+    public EntityFireworkLifetime(EntityTag entity) {
         this.entity = entity;
     }
 
@@ -48,7 +48,7 @@ public class EntityFireworkLifetime implements Property {
         return "firework_lifetime";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.firework_lifetime>
@@ -58,7 +58,7 @@ public class EntityFireworkLifetime implements Property {
         // @description
         // Returns the duration that a firework will live for (before detonating).
         // -->
-        PropertyParser.<EntityFireworkLifetime, DurationTag>registerTag(DurationTag.class, "firework_lifetime", (attribute, object) -> {
+        PropertyParser.registerTag(EntityFireworkLifetime.class, DurationTag.class, "firework_lifetime", (attribute, object) -> {
             return object.getDuration();
         });
     }

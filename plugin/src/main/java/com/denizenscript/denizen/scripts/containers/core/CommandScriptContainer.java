@@ -1,6 +1,6 @@
 package com.denizenscript.denizen.scripts.containers.core;
 
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizen.objects.NPCTag;
 import com.denizenscript.denizen.objects.PlayerTag;
@@ -45,6 +45,9 @@ public class CommandScriptContainer extends ScriptContainer {
     // Please note that 'name:' is the true name of the command (written by users),
     // and 'usage:' is for documentation in the '/help' command.
     // These two options should almost always show the same name.
+    //
+    //
+    // Command scripts can be automatically disabled by adding "enabled: false" as a root key (supports any load-time-parseable tags).
     //
     // <code>
     // # The name of the script doesn't matter, and will not affect the command in any way.

@@ -1,12 +1,11 @@
 package com.denizenscript.denizen.events.player;
 
+import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.ItemTag;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
-import com.denizenscript.denizen.events.BukkitScriptEvent;
-import com.denizenscript.denizen.nms.NMSHandler;
-import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.ObjectTag;
+import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.scripts.ScriptEntryData;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
 import org.bukkit.Material;
@@ -43,8 +42,8 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
     // <context.xp> returns the amount of experience that will drop.
     //
     // @Determine
-    // "CAUGHT:" + ItemTag to change the item that was caught (only if an item was already being caught).
-    // "XP:" + ElementTag(Number) to change how much experience will drop.
+    // "CAUGHT:<ItemTag>" to change the item that was caught (only if an item was already being caught).
+    // "XP:<ElementTag(Number)>" to change how much experience will drop.
     //
     // @Player If the fisher or the caught entity is a player (in most cases, the fisher can be assumed to be a real player).
     // @NPC If the fisher or the caught entity is an NPC.
@@ -52,13 +51,11 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
     // -->
 
     public PlayerFishesScriptEvent() {
-        instance = this;
         registerCouldMatcher("player fishes (<entity>) (while <'state'>)");
         registerCouldMatcher("player fishes (<item>) (while <'state'>)");
         registerSwitches("with");
     }
 
-    public static PlayerFishesScriptEvent instance;
     public EntityTag hook;
     public ElementTag state;
     public EntityTag entity;
@@ -127,11 +124,6 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
     }
 
     @Override
-    public String getName() {
-        return "PlayerFishes";
-    }
-
-    @Override
     public ScriptEntryData getScriptEntryData() {
         return new BukkitScriptEntryData(EntityTag.isPlayer(event.getPlayer()) ? EntityTag.getPlayerFrom(event.getPlayer()) :
                 EntityTag.isPlayer(event.getCaught()) ? EntityTag.getPlayerFrom(event.getCaught()) : null,
@@ -164,7 +156,7 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
         if (EntityTag.isNPC(event.getPlayer())) {
             return;
         }
-        Entity hookEntity = NMSHandler.entityHelper.getFishHook(event);
+        Entity hookEntity = event.getHook();
         EntityTag.rememberEntity(hookEntity);
         hook = new EntityTag(hookEntity);
         state = new ElementTag(event.getState().toString());

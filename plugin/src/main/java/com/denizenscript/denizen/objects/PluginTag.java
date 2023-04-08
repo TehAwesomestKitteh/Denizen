@@ -1,6 +1,6 @@
 package com.denizenscript.denizen.objects;
 
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.DenizenCore;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.flags.FlaggableObject;
@@ -44,27 +44,12 @@ public class PluginTag implements ObjectTag, FlaggableObject {
     //    Object Fetcher
     ////////////////
 
-    @Deprecated
-    public static PluginTag valueOf(String string) {
-        return valueOf(string, null);
-    }
-
-    /**
-     * Gets a PluginTag from a string format.
-     *
-     * @param string The plugin in string form. (pl@PluginName)
-     * @return The PluginTag value. If the string is incorrectly formatted or
-     * the specified plugin is invalid, this is null.
-     */
     @Fetchable("pl")
     public static PluginTag valueOf(String string, TagContext context) {
-
         if (string == null) {
             return null;
         }
-
         string = CoreUtilities.toLowerCase(string).replace("pl@", "");
-
         try {
             // Attempt to match from plugin list, as PluginManager#getPlugin is case sensitive
             for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
@@ -76,9 +61,7 @@ public class PluginTag implements ObjectTag, FlaggableObject {
         catch (Exception e) {
             Debug.echoError("Invalid plugin name specified, or plugin is not enabled: " + string);
         }
-
         return null;
-
     }
 
     public static boolean matches(String arg) {
@@ -118,11 +101,6 @@ public class PluginTag implements ObjectTag, FlaggableObject {
     private String prefix = "Plugin";
 
     @Override
-    public String getObjectType() {
-        return "Plugin";
-    }
-
-    @Override
     public String getPrefix() {
         return prefix;
     }
@@ -148,6 +126,11 @@ public class PluginTag implements ObjectTag, FlaggableObject {
     }
 
     @Override
+    public Object getJavaObject() {
+        return plugin;
+    }
+
+    @Override
     public PluginTag setPrefix(String prefix) {
         this.prefix = prefix;
         return this;
@@ -163,7 +146,7 @@ public class PluginTag implements ObjectTag, FlaggableObject {
         // Nothing to do.
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         AbstractFlagTracker.registerFlagHandlers(tagProcessor);
 

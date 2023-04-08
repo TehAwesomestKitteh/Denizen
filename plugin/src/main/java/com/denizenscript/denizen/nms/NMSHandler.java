@@ -1,27 +1,26 @@
 package com.denizenscript.denizen.nms;
 
+import com.denizenscript.denizen.nms.abstracts.*;
 import com.denizenscript.denizen.nms.interfaces.*;
 import com.denizenscript.denizen.nms.util.PlayerProfile;
 import com.denizenscript.denizen.nms.util.jnbt.CompoundTag;
 import com.denizenscript.denizen.nms.util.jnbt.Tag;
-import com.denizenscript.denizen.nms.abstracts.AnimationHelper;
-import com.denizenscript.denizen.nms.abstracts.BiomeNMS;
-import com.denizenscript.denizen.nms.abstracts.BlockLight;
-import com.denizenscript.denizen.nms.abstracts.ParticleHelper;
-import com.denizenscript.denizen.nms.abstracts.ProfileEditor;
-import com.denizenscript.denizen.nms.abstracts.Sidebar;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import net.md_5.bungee.api.chat.HoverEvent;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public abstract class NMSHandler {
 
@@ -57,9 +56,6 @@ public abstract class NMSHandler {
             if (NMSHandler.class.isAssignableFrom(clazz)) {
                 // Found and loaded - good to go!
                 instance = (NMSHandler) clazz.newInstance();
-                if (version.isAtMost(NMSVersion.v1_16)) {
-                    enchantmentHelper = new EnchantmentHelper();
-                }
                 return true;
             }
         }
@@ -92,7 +88,6 @@ public abstract class NMSHandler {
     public static EntityHelper entityHelper;
     public static FishingHelper fishingHelper;
     public static ItemHelper itemHelper;
-    public static SoundHelper soundHelper;
     public static PacketHelper packetHelper;
     public static ParticleHelper particleHelper;
     public static PlayerHelper playerHelper;
@@ -131,8 +126,6 @@ public abstract class NMSHandler {
 
     public abstract CompoundTag createCompoundTag(Map<String, Tag> value);
 
-    public abstract int getPort();
-
     public abstract String getTitle(Inventory inventory);
 
     public void setInventoryTitle(InventoryView view, String title) {
@@ -146,4 +139,11 @@ public abstract class NMSHandler {
     public abstract boolean containerHas(PersistentDataContainer container, String key);
 
     public abstract String containerGetString(PersistentDataContainer container, String key);
+
+    public UUID getBossbarUUID(BossBar bar) {
+        return null;
+    }
+
+    public void setBossbarUUID(BossBar bar, UUID id) {
+    }
 }

@@ -12,7 +12,7 @@ Debug:
     # The max length of a line of debug output. Shorten this if your console is hard to read.
     Line length: 300
     # The max length of debug output. After this length, all further output will be cut off.
-    Trim length limit: 1024
+    Trim length limit: 4096
     # Whether to permit the "system.redirect_logging" mechanism
     Allow console redirection: false
     # Whether to send basic statistic information to the Denizen central server.
@@ -67,6 +67,14 @@ Scripts:
         # If false, it will only initialize once at least one command script is loaded.
         # This defaults to false to avoid any possible interference on servers that don't use command scripts.
         Auto init: false
+    Economy:
+        # If enabled, async calls to economy scripts or PlaceholderAPI tags will be sent through to the main thread.
+        # This will remove the illegal-async-access warning, at the cost of risking thread lockup or other issues.
+        # If you're wondering why async is blocked, see explanation @ https://i.alexgoodwin.media/i/misc/2fdd06.png
+        # IF YOU HAVE ASYNC WARNINGS FROM DENIZEN, THIS IS NOT HOW TO FIX IT.
+        # YOU SHOULD YELL AT THE DEVELOPER OF WHATEVER PLUGIN IS TRYING TO MAKE SYNC-ONLY CALLS ASYNC.
+        # ASYNC USAGES OF THE BUKKIT API ARE NEVER ALLOWED EXCEPT WHERE EXPLICITLY DOCUMENTED OTHERWISE.
+        Pass async to main thread: false
 
 # Settings related to queues.
 Queues:
@@ -199,6 +207,9 @@ Commands:
     SQL:
         # Whether to allow the SQL command.
         Allow: true
+    Mongo:
+        # Whether to allow the Mongo command.
+        Allow: true
     Webget:
         # Whether to allow scripts to read arbitrary data from the web, which can also potentially enable tracking of your private server data.
         # Generally this is safe, but set to 'false' if you want very strict security.
@@ -250,6 +261,38 @@ Tags:
         # If you have a very specific use-case that requires this, it is recommended you ask on the Denizen Discord and verify it actually makes sense.
         # If you've verified the idea makes sense, you can swap this option to 'true' to disable the default warning.
         I know what im doing and need this: false
+    # If the 'nullify skull skin ids' option is changed to 'true', any skull_skin that has a valid texture but is missing a UUID or name, will automatically supply null values for the UUID and Name.
+    # Skulls that are missing *both* name and id will be nullified regardless of this setting. Skulls that contain *both* an ID and name will retain their set values regardless of this setting.
+    # The benefit of enabling this is it prevents locking the server thread to download the data from Mojang servers.
+    # The risk is that it may interfere with other plugins or systems that expect correct data to be set.
+    Nullify skull skin ids: false
+    # If true, polygons default to WorldEdit style block-inclusive logic. If false, use precise 'exclusive' logic.
+    Polygon default inclusive: false
+
+# Java Reflection is the toolkit for accessing raw underlying Java data.
+# Denizen partially exposes this, for example in 'JavaReflectedObjectTag', as some scripts may have use for this.
+# This however often isn't needed, and sometimes can be abused to access things a script shouldn't have access to.
+# Accordingly, security-minded server owners might prefer to lock all reflection-allow options to 'false' to be safe.
+# However, the default settings of allowing reads but not writes or executions is safe for most servers.
+# Only servers that really need it should enable write/execute options.
+Reflection:
+    # Whether to allow tags to read raw field data in scripts. This is generally safe.
+    Allow reading fields: true
+    # Whether to allow scripts to reflect into core object methods like "toString" or "equals". This is usually safe, but might be abusable in certain edge edges, if for example some object somewhere improperly handles the "equals" method to execute logic or similar.
+    Allow core methods: true
+    #
+    # ==== WARNING ====
+    # If a scripter or script's documentation has told you to enable access to reflection methods in your config, that script should be scrutinized very carefully.
+    # Make sure either you know exactly what it's going to do, or you very much trust whoever gave you it.
+    # These tools are very powerful and dangerous.
+    # =================
+    #
+    # Whether to allow the 'reflectionset' command. This command is highly abusable and should be left disabled.
+    Allow set command: false
+    # Whether the 'reflectionset' command may set to 'private' fields. This is very likely to be dangerous if enabled.
+    Allow set private fields: false
+    # Whether the 'reflectionset' command may set to 'final' fields. This is very likely to be dangerous if enabled.
+    Allow set final fields: false
 
 Saves:
     # How long (in seconds) before the offline player flag cache times out.
@@ -262,6 +305,17 @@ Saves:
     Skip flag cleaning: false
     # When set to 'true', skips flag cleaning for ChunkTag and LocationTag flags.
     Skip chunk flag cleaning: false
+    # When set to 'true', player flag autosaving will be delayed whenever world saves are disabled (eg via '/save-off').
+    # Player flags will still save as normal during shutdown, or when world saving is enabled.
+    # This checks based on your default world (server.worlds.first).
+    Only save if world save is on: false
+    # Delay (DurationTag) after modifying a PlayerTag's offline world-data (gamemode, inventory, etc) before it is saved to file.
+    # Larger delays are better for performance when this is used often. Shorter delays are better for interop.
+    # Set to '0' for instant save on modification. Set to '999h' to only save at shutdown.
+    Save world player file delay: 10s
+    # Duration to retain offline player data being purging.
+    # Higher values are better for perf but worse for RAM. Lower values are better for interop. Set to '0' to never cache.
+    World player data max cache: 1h
 
 Packets:
     # Whether to allow Denizen to intercept packets from and to player clients.

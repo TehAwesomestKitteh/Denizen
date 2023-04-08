@@ -15,7 +15,7 @@ import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import com.denizenscript.denizen.nms.util.jnbt.CompoundTag;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
 import net.minecraft.core.*;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundUpdateTagsPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -34,21 +34,20 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
-import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.material.PushReaction;
 import org.bukkit.*;
 import org.bukkit.block.*;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.v1_19_R1.CraftChunk;
-import org.bukkit.craftbukkit.v1_19_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R1.block.*;
-import org.bukkit.craftbukkit.v1_19_R1.block.data.CraftBlockData;
-import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_19_R1.tag.CraftBlockTag;
-import org.bukkit.craftbukkit.v1_19_R1.util.CraftMagicNumbers;
+import org.bukkit.craftbukkit.v1_19_R3.CraftChunk;
+import org.bukkit.craftbukkit.v1_19_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.block.*;
+import org.bukkit.craftbukkit.v1_19_R3.block.data.CraftBlockData;
+import org.bukkit.craftbukkit.v1_19_R3.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_19_R3.tag.CraftBlockTag;
+import org.bukkit.craftbukkit.v1_19_R3.util.CraftMagicNumbers;
 import org.bukkit.entity.Player;
-import org.bukkit.event.world.PortalCreateEvent;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
@@ -75,20 +74,6 @@ public class BlockHelperImpl implements BlockHelper {
     public void applyPhysics(Location location) {
         BlockPos pos = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
         ((CraftWorld) location.getWorld()).getHandle().updateNeighborsAt(pos, CraftMagicNumbers.getBlock(location.getBlock().getType()));
-    }
-
-    @Override
-    public BlockData parseBlockData(Material material, String otherData) {
-        return CraftBlockData.newData(material, otherData);
-    }
-
-    @Override
-    public List<Location> getBlocksList(PortalCreateEvent event) {
-        List<Location> blocks = new ArrayList<>();
-        for (org.bukkit.block.BlockState block : event.getBlocks()) {
-            blocks.add(block.getLocation());
-        }
-        return blocks;
     }
 
     public static <T extends BlockEntity> T getTE(CraftBlockEntityState<T> cbs) {
@@ -224,7 +209,7 @@ public class BlockHelperImpl implements BlockHelper {
     }
 
     @Override
-    public float getBlockStength(Material mat) {
+    public float getBlockStrength(Material mat) {
         return getMaterialBlock(mat).defaultBlockState().destroySpeed;
     }
 
@@ -242,16 +227,16 @@ public class BlockHelperImpl implements BlockHelper {
     // TODO: 1.18: This might be fixed by Spigot and can be switched to raw method calls
     // Relevant issue: https://hub.spigotmc.org/jira/browse/SPIGOT-6696
     // NOTE: Not fixed as of 1.19 initial update
-    public static MethodHandle BLOCKSTATEBASE_GETFLUIDSTATE = ReflectionHelper.getMethodHandle(BlockBehaviour.BlockStateBase.class, ReflectionMappingsInfo.BlockBehaviour_BlockStateBase_getFluidState);
-    public static MethodHandle FLUIDSTATE_ISRANDOMLYTICKING = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_isRandomlyTicking);
-    public static MethodHandle FLUIDSTATE_ISEMPTY = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_isEmpty);
-    public static MethodHandle FLUIDSTATE_CREATELEGACYBLOCK = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_createLegacyBlock);
-    public static MethodHandle FLUIDSTATE_ANIMATETICK = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_animateTick, Level.class, BlockPos.class, RandomSource.class);
+    public static MethodHandle BLOCKSTATEBASE_GETFLUIDSTATE = ReflectionHelper.getMethodHandle(BlockBehaviour.BlockStateBase.class, ReflectionMappingsInfo.BlockBehaviourBlockStateBase_getFluidState_method);
+    public static MethodHandle FLUIDSTATE_ISRANDOMLYTICKING = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_isRandomlyTicking_method);
+    public static MethodHandle FLUIDSTATE_ISEMPTY = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_isEmpty_method);
+    public static MethodHandle FLUIDSTATE_CREATELEGACYBLOCK = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_createLegacyBlock_method);
+    public static MethodHandle FLUIDSTATE_ANIMATETICK = ReflectionHelper.getMethodHandle(BLOCKSTATEBASE_GETFLUIDSTATE.type().returnType(), ReflectionMappingsInfo.FluidState_animateTick_method, Level.class, BlockPos.class, RandomSource.class);
 
     @Override
     public void doRandomTick(Location location) {
         BlockPos pos = new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ());
-        LevelChunk nmsChunk = ((CraftChunk) location.getChunk()).getHandle();
+        ChunkAccess nmsChunk = ((CraftChunk) location.getChunk()).getHandle(ChunkStatus.FULL);
         net.minecraft.world.level.block.state.BlockState nmsBlock = nmsChunk.getBlockState(pos);
         ServerLevel nmsWorld = ((CraftWorld) location.getWorld()).getHandle();
         if (nmsBlock.isRandomlyTicking()) {
@@ -275,7 +260,8 @@ public class BlockHelperImpl implements BlockHelper {
     @Override
     public Instrument getInstrumentFor(Material mat) {
         net.minecraft.world.level.block.Block blockType = getMaterialBlock(mat);
-        NoteBlockInstrument nmsInstrument = NoteBlockInstrument.byState(blockType.defaultBlockState());
+        Optional<NoteBlockInstrument> aboveInstrument = NoteBlockInstrument.byStateAbove(blockType.defaultBlockState());
+        NoteBlockInstrument nmsInstrument = aboveInstrument.orElse(NoteBlockInstrument.byStateBelow(blockType.defaultBlockState()));
         return Instrument.values()[(nmsInstrument.ordinal())];
     }
 
@@ -363,14 +349,14 @@ public class BlockHelperImpl implements BlockHelper {
         return Color.fromRGB(craftBlock.getNMS().getMapColor(craftBlock.getHandle(), craftBlock.getPosition()).col);
     }
 
-    public static MethodHandle HolderSet_Named_bind = ReflectionHelper.getMethodHandle(HolderSet.Named.class, ReflectionMappingsInfo.HolderSet_Named_bind, List.class);
-    public static MethodHandle Holder_Reference_bindTags = ReflectionHelper.getMethodHandle(Holder.Reference.class, ReflectionMappingsInfo.Holder_Reference_bindTags, Collection.class);
+    public static MethodHandle HolderSet_Named_bind = ReflectionHelper.getMethodHandle(HolderSet.Named.class, ReflectionMappingsInfo.HolderSetNamed_bind_method, List.class);
+    public static MethodHandle Holder_Reference_bindTags = ReflectionHelper.getMethodHandle(Holder.Reference.class, ReflectionMappingsInfo.HolderReference_bindTags_method, Collection.class);
 
     @Override
     public void setVanillaTags(Material material, Set<String> tags) {
         Holder<net.minecraft.world.level.block.Block> nmsHolder = getMaterialBlock(material).builtInRegistryHolder();
         nmsHolder.tags().forEach(nmsTag -> {
-            HolderSet.Named<net.minecraft.world.level.block.Block> nmsHolderSet = Registry.BLOCK.getTag(nmsTag).orElse(null);
+            HolderSet.Named<net.minecraft.world.level.block.Block> nmsHolderSet = BuiltInRegistries.BLOCK.getTag(nmsTag).orElse(null);
             if (nmsHolderSet == null) {
                 return;
             }
@@ -382,12 +368,12 @@ public class BlockHelperImpl implements BlockHelper {
             catch (Throwable ex) {
                 Debug.echoError(ex);
             }
-            VanillaTagHelper.updateMaterialTag(new CraftBlockTag(Registry.BLOCK, nmsTag));
+            VanillaTagHelper.updateMaterialTag(new CraftBlockTag(BuiltInRegistries.BLOCK, nmsTag));
         });
         List<TagKey<net.minecraft.world.level.block.Block>> newNmsTags = new ArrayList<>();
         for (String tag : tags) {
-            TagKey<net.minecraft.world.level.block.Block> newNmsTag = TagKey.create(Registry.BLOCK_REGISTRY, new ResourceLocation(tag));
-            HolderSet.Named<net.minecraft.world.level.block.Block> nmsHolderSet = Registry.BLOCK.getOrCreateTag(newNmsTag);
+            TagKey<net.minecraft.world.level.block.Block> newNmsTag = TagKey.create(BuiltInRegistries.BLOCK.key(), new ResourceLocation(tag));
+            HolderSet.Named<net.minecraft.world.level.block.Block> nmsHolderSet = BuiltInRegistries.BLOCK.getOrCreateTag(newNmsTag);
             List<Holder<net.minecraft.world.level.block.Block>> nmsHolders = nmsHolderSet.stream().collect(Collectors.toCollection(ArrayList::new));
             nmsHolders.add(nmsHolder);
             try {
@@ -397,7 +383,7 @@ public class BlockHelperImpl implements BlockHelper {
                 Debug.echoError(ex);
             }
             newNmsTags.add(newNmsTag);
-            VanillaTagHelper.addOrUpdateMaterialTag(new CraftBlockTag(Registry.BLOCK, newNmsTag));
+            VanillaTagHelper.addOrUpdateMaterialTag(new CraftBlockTag(BuiltInRegistries.BLOCK, newNmsTag));
         }
         try {
             Holder_Reference_bindTags.invoke(nmsHolder, newNmsTags);
@@ -405,10 +391,9 @@ public class BlockHelperImpl implements BlockHelper {
         catch (Throwable ex) {
             Debug.echoError(ex);
         }
-        ClientboundUpdateTagsPacket tagsPacket = new ClientboundUpdateTagsPacket(TagNetworkSerialization.serializeTagsToNetwork(((CraftServer) Bukkit.getServer()).getServer().registryAccess()));
+        ClientboundUpdateTagsPacket tagsPacket = new ClientboundUpdateTagsPacket(TagNetworkSerialization.serializeTagsToNetwork(((CraftServer) Bukkit.getServer()).getServer().registries()));
         for (Player player : Bukkit.getOnlinePlayers()) {
             PacketHelperImpl.send(player, tagsPacket);
         }
     }
-
 }

@@ -5,7 +5,7 @@ import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.ItemTag;
 import com.denizenscript.denizen.tags.BukkitTagContext;
 import com.denizenscript.denizen.utilities.FormattedTextHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ScriptTag;
@@ -46,6 +46,8 @@ public class EnchantmentScriptContainer extends ScriptContainer {
     // Rarity, Category, and Slots do not apply changes to an already-loaded script until the next restart (except when the script is newly added).
     //
     // Using these may cause unpredictable compatibility issues with external plugins.
+    //
+    // Enchantment scripts can be automatically disabled by adding "enabled: false" as a root key (supports any load-time-parseable tags).
     //
     // <code>
     // Enchantment_Script_Name:
@@ -127,7 +129,7 @@ public class EnchantmentScriptContainer extends ScriptContainer {
     //     # This is used internally by the enchanting table and the anvil to determine if this enchantment can be given alongside another.
     //     # If unspecified, will default to always true.
     //     # | Most enchantment scripts can exclude this key.
-    //     is_compatible: <context.enchantment_key.advanced_matches_text[minecraft:lure|minecraft:luck*]>
+    //     is_compatible: <context.enchantment_key.advanced_matches[minecraft:lure|minecraft:luck*]>
     //
     //     # A tag that returns a boolean indicating whether this enchantment can enchant a specific item.
     //     # Can make use of "<context.item>" for the applicable ItemTag.
@@ -197,19 +199,21 @@ public class EnchantmentScriptContainer extends ScriptContainer {
         maxCostTaggable = getString("max_cost", "1");
         damageBonusTaggable = getString("damage_bonus", "0.0");
         damageProtectionTaggable = getString("damage_protection", "0");
-        EnchantmentReference ref = registeredEnchantmentContainers.get(id);
-        boolean isNew = ref == null;
-        if (isNew) {
-            ref = new EnchantmentReference();
-        }
-        EnchantmentScriptContainer old = ref.script;
-        ref.script = this;
-        registeredEnchantmentContainers.put(id, ref);
-        if (isNew) {
-            enchantment = NMSHandler.enchantmentHelper.registerFakeEnchantment(ref);
-        }
-        else {
-            enchantment = old.enchantment;
+        if (shouldEnable()) {
+            EnchantmentReference ref = registeredEnchantmentContainers.get(id);
+            boolean isNew = ref == null;
+            if (isNew) {
+                ref = new EnchantmentReference();
+            }
+            EnchantmentScriptContainer old = ref.script;
+            ref.script = this;
+            registeredEnchantmentContainers.put(id, ref);
+            if (isNew) {
+                enchantment = NMSHandler.enchantmentHelper.registerFakeEnchantment(ref);
+            }
+            else {
+                enchantment = old.enchantment;
+            }
         }
     }
 
@@ -293,7 +297,7 @@ public class EnchantmentScriptContainer extends ScriptContainer {
         src.contexts.put("level", new ElementTag(level));
         src.contexts.put("cause", new ElementTag(causeName));
         if (attacker != null) {
-            src.contexts.put("attacker", new EntityTag(attacker));
+            src.contexts.put("attacker", new EntityTag(attacker).getDenizenObject());
         }
         return Integer.parseInt(autoTag(damageProtectionTaggable, src));
     }
@@ -317,10 +321,10 @@ public class EnchantmentScriptContainer extends ScriptContainer {
         ContextSource.SimpleMap src = new ContextSource.SimpleMap();
         src.contexts = new HashMap<>();
         if (attacker != null) {
-            src.contexts.put("attacker", new EntityTag(attacker));
+            src.contexts.put("attacker", new EntityTag(attacker).getDenizenObject());
         }
         if (victim != null) {
-            src.contexts.put("victim", new EntityTag(victim));
+            src.contexts.put("victim", new EntityTag(victim).getDenizenObject());
         }
         src.contexts.put("level", new ElementTag(level));
         queue.contextSource = src;

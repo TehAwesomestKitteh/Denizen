@@ -3,7 +3,7 @@ package com.denizenscript.denizen.events.player;
 import com.denizenscript.denizen.objects.ItemTag;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.scripts.containers.core.BookScriptContainer;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -37,6 +37,7 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
     // <context.title> returns the name of the book, if any.
     // <context.pages> returns the number of pages in the book.
     // <context.book> returns the book item being edited, containing the new page contents.
+    // <context.old_book> returns the book item being edited, containing the old page contents.
     // <context.signing> returns whether the book is about to be signed.
     //
     // @Determine
@@ -48,12 +49,10 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
     // -->
 
     public PlayerEditsBookScriptEvent() {
-        instance = this;
         registerCouldMatcher("player edits book");
         registerCouldMatcher("player signs book");
     }
 
-    public static PlayerEditsBookScriptEvent instance;
     public PlayerEditBookEvent event;
     public PlayerTag player;
 
@@ -67,11 +66,6 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerEditsBook";
     }
 
     @Override
@@ -110,10 +104,16 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
             case "signing": return new ElementTag(event.isSigning());
             case "title": return event.isSigning() ? new ElementTag(event.getNewBookMeta().getTitle()) : null;
             case "pages": return new ElementTag(event.getNewBookMeta().getPageCount());
-            case "book":
+            case "book": {
                 ItemStack book = new ItemStack(Material.WRITABLE_BOOK);
                 book.setItemMeta(event.getNewBookMeta());
                 return new ItemTag(book);
+            }
+            case "old_book": {
+                ItemStack book = new ItemStack(Material.WRITABLE_BOOK);
+                book.setItemMeta(event.getPreviousBookMeta());
+                return new ItemTag(book);
+            }
         }
         return super.getContext(name);
     }

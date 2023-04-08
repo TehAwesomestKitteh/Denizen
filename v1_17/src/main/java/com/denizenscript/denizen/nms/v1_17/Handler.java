@@ -1,26 +1,28 @@
 package com.denizenscript.denizen.nms.v1_17;
 
 import com.denizenscript.denizen.nms.NMSHandler;
-import com.denizenscript.denizen.nms.abstracts.*;
+import com.denizenscript.denizen.nms.abstracts.BiomeNMS;
+import com.denizenscript.denizen.nms.abstracts.BlockLight;
+import com.denizenscript.denizen.nms.abstracts.ProfileEditor;
+import com.denizenscript.denizen.nms.abstracts.Sidebar;
+import com.denizenscript.denizen.nms.util.PlayerProfile;
+import com.denizenscript.denizen.nms.util.jnbt.CompoundTag;
+import com.denizenscript.denizen.nms.util.jnbt.Tag;
 import com.denizenscript.denizen.nms.v1_17.helpers.*;
 import com.denizenscript.denizen.nms.v1_17.impl.BiomeNMSImpl;
 import com.denizenscript.denizen.nms.v1_17.impl.ProfileEditorImpl;
 import com.denizenscript.denizen.nms.v1_17.impl.SidebarImpl;
 import com.denizenscript.denizen.nms.v1_17.impl.blocks.BlockLightImpl;
 import com.denizenscript.denizen.nms.v1_17.impl.jnbt.CompoundTagImpl;
-import com.denizenscript.denizen.nms.util.jnbt.Tag;
 import com.denizenscript.denizen.objects.ItemTag;
 import com.denizenscript.denizen.utilities.FormattedTextHelper;
 import com.denizenscript.denizencore.utilities.CoreConfiguration;
+import com.denizenscript.denizencore.utilities.CoreUtilities;
+import com.denizenscript.denizencore.utilities.ReflectionHelper;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import com.denizenscript.denizen.nms.util.PlayerProfile;
-import com.denizenscript.denizencore.utilities.ReflectionHelper;
-import com.denizenscript.denizen.nms.util.jnbt.CompoundTag;
-import com.denizenscript.denizencore.utilities.CoreUtilities;
-import com.denizenscript.denizencore.utilities.debugging.Debug;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Content;
@@ -77,7 +79,6 @@ public class Handler extends NMSHandler {
         entityHelper = new EntityHelperImpl();
         fishingHelper = new FishingHelperImpl();
         itemHelper = new ItemHelperImpl();
-        soundHelper = new SoundHelperImpl();
         packetHelper = new PacketHelperImpl();
         particleHelper = new ParticleHelperImpl();
         playerHelper = new PlayerHelperImpl();
@@ -175,11 +176,6 @@ public class Handler extends NMSHandler {
     }
 
     @Override
-    public int getPort() {
-        return ((CraftServer) Bukkit.getServer()).getServer().getPort();
-    }
-
-    @Override
     public String getTitle(Inventory inventory) {
         Container nms = ((CraftInventory) inventory).getInventory();
         if (nms instanceof Nameable) {
@@ -272,7 +268,7 @@ public class Handler extends NMSHandler {
         if (contentObject instanceof Text) {
             Object value = ((Text) contentObject).getValue();
             if (value instanceof BaseComponent[]) {
-                return FormattedTextHelper.stringify((BaseComponent[]) value, ChatColor.WHITE);
+                return FormattedTextHelper.stringify((BaseComponent[]) value);
             }
             else {
                 return value.toString();

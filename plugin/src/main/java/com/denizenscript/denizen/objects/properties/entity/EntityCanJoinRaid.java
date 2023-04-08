@@ -28,7 +28,7 @@ public class EntityCanJoinRaid implements Property {
             "can_join_raid"
     };
 
-    private EntityCanJoinRaid(EntityTag entity) {
+    public EntityCanJoinRaid(EntityTag entity) {
         this.entity = entity;
     }
 
@@ -43,12 +43,12 @@ public class EntityCanJoinRaid implements Property {
     public String getPropertyId() {
         return "can_join_raid";
     }
-    
+
     public Raider getRaider() {
         return (Raider) entity.getBukkitEntity();
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.can_join_raid>
@@ -58,7 +58,7 @@ public class EntityCanJoinRaid implements Property {
         // @description
         // If the entity is raider mob (like a pillager), returns whether the entity is allowed to join active raids.
         // -->
-        PropertyParser.<EntityCanJoinRaid, ElementTag>registerTag(ElementTag.class, "can_join_raid", (attribute, object) -> {
+        PropertyParser.registerTag(EntityCanJoinRaid.class, ElementTag.class, "can_join_raid", (attribute, object) -> {
             return new ElementTag(object.getRaider().isCanJoinRaid());
         });
     }

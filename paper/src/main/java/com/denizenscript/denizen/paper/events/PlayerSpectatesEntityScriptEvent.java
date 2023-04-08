@@ -34,27 +34,20 @@ public class PlayerSpectatesEntityScriptEvent extends BukkitScriptEvent implemen
     // -->
 
     public PlayerSpectatesEntityScriptEvent() {
-        instance = this;
         registerCouldMatcher("player spectates <entity>");
     }
 
-    public static PlayerSpectatesEntityScriptEvent instance;
     public PlayerStartSpectatingEntityEvent event;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!new EntityTag(event.getNewSpectatorTarget()).tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, new EntityTag(event.getNewSpectatorTarget()))) {
             return false;
         }
         if (!runInCheck(path, event.getPlayer().getLocation())) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerSpectates";
     }
 
     @Override

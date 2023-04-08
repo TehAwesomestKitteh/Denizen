@@ -36,19 +36,17 @@ public class EntityChangesPoseScriptEvent extends BukkitScriptEvent implements L
     // -->
 
     public EntityChangesPoseScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> changes pose");
         registerSwitches("old", "new");
     }
 
-    public static EntityChangesPoseScriptEvent instance;
     public EntityTag entity;
     public Pose oldPose;
     public EntityPoseChangeEvent event;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!entity.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, entity)) {
             return false;
         }
         if (!runGenericSwitchCheck(path, "old", oldPose.name())) {
@@ -64,11 +62,6 @@ public class EntityChangesPoseScriptEvent extends BukkitScriptEvent implements L
     }
 
     @Override
-    public String getName() {
-        return "EntityChangesPose";
-    }
-
-    @Override
     public ScriptEntryData getScriptEntryData() {
         return new BukkitScriptEntryData(entity);
     }
@@ -79,9 +72,9 @@ public class EntityChangesPoseScriptEvent extends BukkitScriptEvent implements L
             case "entity":
                 return entity;
             case "old_pose":
-                return new ElementTag(oldPose.name());
+                return new ElementTag(oldPose);
             case "new_pose":
-                return new ElementTag(event.getPose().name());
+                return new ElementTag(event.getPose());
         }
         return super.getContext(name);
     }

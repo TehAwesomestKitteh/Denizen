@@ -14,6 +14,7 @@ import com.denizenscript.denizen.nms.v1_18.impl.entities.EntityFakePlayerImpl;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.scripts.commands.entity.FakeEquipCommand;
+import com.denizenscript.denizen.scripts.commands.entity.InvisibleCommand;
 import com.denizenscript.denizen.scripts.commands.entity.RenameCommand;
 import com.denizenscript.denizen.scripts.commands.entity.SneakCommand;
 import com.denizenscript.denizen.scripts.commands.player.DisguiseCommand;
@@ -93,7 +94,7 @@ public class DenizenNetworkManagerImpl extends Connection {
             return copier;
         }
         catch (Throwable ex) {
-            com.denizenscript.denizen.utilities.debugging.Debug.echoError(ex);
+            Debug.echoError(ex);
             return null;
         }
     }
@@ -350,8 +351,9 @@ public class DenizenNetworkManagerImpl extends Connection {
                     texture = property.getValue();
                     signature = property.getSignature();
                 }
-                PlayerReceivesTablistUpdateScriptEvent.TabPacketData data = new PlayerReceivesTablistUpdateScriptEvent.TabPacketData(mode, profile.getId(), profile.getName(),
-                        update.getDisplayName() == null ? null : FormattedTextHelper.stringify(Handler.componentToSpigot(update.getDisplayName()), ChatColor.WHITE), update.getGameMode().name(), texture, signature, update.getLatency());
+                String modeText = update.getGameMode() == null ? null : update.getGameMode().name();
+                PlayerReceivesTablistUpdateScriptEvent.TabPacketData data = new PlayerReceivesTablistUpdateScriptEvent.TabPacketData(mode, profile.getId(), true, profile.getName(),
+                        update.getDisplayName() == null ? null : FormattedTextHelper.stringify(Handler.componentToSpigot(update.getDisplayName())), modeText, texture, signature, update.getLatency());
                 PlayerReceivesTablistUpdateScriptEvent.fire(player.getBukkitEntity(), data);
                 if (data.modified) {
                     if (!isOverriding) {
@@ -373,7 +375,7 @@ public class DenizenNetworkManagerImpl extends Connection {
                         if (data.texture != null) {
                             newProfile.getProperties().put("textures", new Property("textures", data.texture, data.signature));
                         }
-                        newPacket.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(newProfile, data.latency, GameType.byName(CoreUtilities.toLowerCase(data.gamemode)),
+                        newPacket.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(newProfile, data.latency, data.gamemode == null ? null : GameType.byName(CoreUtilities.toLowerCase(data.gamemode)),
                                 data.display == null ? null : Handler.componentToNMS(FormattedTextHelper.parse(data.display, ChatColor.WHITE))));
                         oldManager.send(newPacket, genericfuturelistener);
                     }
@@ -398,16 +400,16 @@ public class DenizenNetworkManagerImpl extends Connection {
             PlayerReceivesActionbarScriptEvent event = PlayerReceivesActionbarScriptEvent.instance;
             Component baseComponent = actionbarPacket.getText();
             event.reset();
-            event.message = new ElementTag(FormattedTextHelper.stringify(Handler.componentToSpigot(baseComponent), ChatColor.WHITE));
+            event.message = new ElementTag(FormattedTextHelper.stringify(Handler.componentToSpigot(baseComponent)));
             event.rawJson = new ElementTag(Component.Serializer.toJson(baseComponent));
             event.system = new ElementTag(false);
             event.player = PlayerTag.mirrorBukkitPlayer(player.getBukkitEntity());
-            event = (PlayerReceivesActionbarScriptEvent) event.fire();
+            event = (PlayerReceivesActionbarScriptEvent) event.triggerNow();
             if (event.cancelled) {
                 return true;
             }
             if (event.modified) {
-                Component component = Handler.componentToNMS(ComponentSerializer.parse(event.rawJson.asString()));
+                Component component = Handler.componentToNMS(event.altMessageDetermination);
                 ClientboundSetActionBarTextPacket newPacket = new ClientboundSetActionBarTextPacket(component);
                 oldManager.send(newPacket, genericfuturelistener);
                 return true;
@@ -707,7 +709,7 @@ public class DenizenNetworkManagerImpl extends Connection {
     }
 
     public ClientboundSetEntityDataPacket getModifiedMetadataFor(ClientboundSetEntityDataPacket metadataPacket) {
-        if (!RenameCommand.hasAnyDynamicRenames() && SneakCommand.forceSetSneak.isEmpty()) {
+        if (!RenameCommand.hasAnyDynamicRenames() && SneakCommand.forceSetSneak.isEmpty() && InvisibleCommand.invisibleEntities.isEmpty()) {
             return null;
         }
         try {
@@ -718,6 +720,7 @@ public class DenizenNetworkManagerImpl extends Connection {
             }
             String nameToApply = RenameCommand.getCustomNameFor(ent.getUUID(), player.getBukkitEntity(), false);
             Boolean forceSneak = SneakCommand.shouldSneak(ent.getUUID(), player.getUUID());
+            Boolean isInvisible = InvisibleCommand.isInvisible(ent.getBukkitEntity(), player.getUUID(), true);
             if (nameToApply == null && forceSneak == null) {
                 return null;
             }
@@ -727,13 +730,23 @@ public class DenizenNetworkManagerImpl extends Connection {
                 SynchedEntityData.DataItem<?> item = data.get(i);
                 EntityDataAccessor<?> watcherObject = item.getAccessor();
                 int watcherId = watcherObject.getId();
-                if (watcherId == 0 && forceSneak != null) { // 0: Entity flags
+                if (watcherId == 0 && (forceSneak != null || isInvisible != null)) { // 0: Entity flags
                     byte val = (Byte) item.getValue();
-                    if (forceSneak) {
-                        val |= 0x02; // 8: Crouching
+                    if (forceSneak != null) {
+                        if (forceSneak) {
+                            val |= 0x02; // 8: Crouching
+                        }
+                        else {
+                            val &= ~0x02;
+                        }
                     }
-                    else {
-                        val &= ~0x02;
+                    if (isInvisible != null) {
+                        if (isInvisible) {
+                            val |= 0x20;
+                        }
+                        else {
+                            val &= ~0x20;
+                        }
                     }
                     data.set(i, new SynchedEntityData.DataItem(watcherObject, val));
                     any = true;
@@ -1094,7 +1107,14 @@ public class DenizenNetworkManagerImpl extends Connection {
         if (packet instanceof ClientboundChatPacket && DenizenPacketHandler.instance.shouldInterceptChatPacket()) {
             PacketOutChatImpl packetHelper = new PacketOutChatImpl((ClientboundChatPacket) packet);
             PlayerReceivesMessageScriptEvent result = DenizenPacketHandler.instance.sendPacket(player.getBukkitEntity(), packetHelper);
-            return result != null && result.cancelled;
+            if (result != null) {
+                if (result.cancelled) {
+                    return true;
+                }
+                if (result.modified) {
+                    packetHelper.setRawJson(ComponentSerializer.toString(result.altMessageDetermination));
+                }
+            }
         }
         else if (packet instanceof ClientboundSetEntityDataPacket && DenizenPacketHandler.instance.shouldInterceptMetadata()) {
             return DenizenPacketHandler.instance.sendPacket(player.getBukkitEntity(), new PacketOutEntityMetadataImpl((ClientboundSetEntityDataPacket) packet));

@@ -2,7 +2,7 @@ package com.denizenscript.denizen.scripts.commands.world;
 
 import com.denizenscript.denizen.utilities.Utilities;
 import com.denizenscript.denizen.utilities.command.TabCompleteHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.*;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.ItemTag;
@@ -194,9 +194,9 @@ public class DropCommand extends AbstractCommand {
                 }
                 break;
         }
-        scriptEntry.addObject("dropped_entities", entityList);
+        scriptEntry.saveObject("dropped_entities", entityList);
         if (entityList.size() == 1) {
-            scriptEntry.addObject("dropped_entity", entityList.getObject(0));
+            scriptEntry.saveObject("dropped_entity", entityList.getObject(0));
         }
     }
 }

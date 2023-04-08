@@ -27,7 +27,7 @@ public class EntityStrength implements Property {
             "strength"
     };
 
-    private EntityStrength(EntityTag entity) {
+    public EntityStrength(EntityTag entity) {
         this.entity = entity;
     }
 
@@ -47,7 +47,7 @@ public class EntityStrength implements Property {
         return "strength";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.strength>
@@ -58,7 +58,7 @@ public class EntityStrength implements Property {
         // Returns the strength of a Llama. A llama's inventory contains (strength times three) slots.
         // Can be from 1 to 5 (inclusive).
         // -->
-        PropertyParser.<EntityStrength, ElementTag>registerTag(ElementTag.class, "strength", (attribute, object) -> {
+        PropertyParser.registerTag(EntityStrength.class, ElementTag.class, "strength", (attribute, object) -> {
             return object.getStrength();
         });
     }

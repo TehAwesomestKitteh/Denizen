@@ -5,7 +5,7 @@ import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.entity.FakeEntity;
 import com.denizenscript.denizen.utilities.packets.NetworkInterceptHelper;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
@@ -137,8 +137,12 @@ public class DisguiseCommand extends AbstractCommand {
         }
 
         public void moveFakeNow(Location position) {
+            float yawOff = 0;
+            if (as.getBukkitEntityType() == EntityType.ENDER_DRAGON) {
+                yawOff = 180;
+            }
             NMSHandler.entityHelper.snapPositionTo(fakeToSelf.entity.getBukkitEntity(), position.toVector());
-            NMSHandler.entityHelper.look(fakeToSelf.entity.getBukkitEntity(), position.getYaw(), position.getPitch());
+            NMSHandler.entityHelper.look(fakeToSelf.entity.getBukkitEntity(), position.getYaw() + yawOff, position.getPitch());
         }
 
         public void startFake(PlayerTag player) {

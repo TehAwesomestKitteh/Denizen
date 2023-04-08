@@ -3,7 +3,7 @@ package com.denizenscript.denizen.objects.properties.item;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.util.jnbt.*;
 import com.denizenscript.denizen.objects.ItemTag;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.Mechanism;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -41,7 +41,7 @@ public class ItemRawNBT implements Property {
             "raw_nbt"
     };
 
-    private ItemRawNBT(ItemTag _item) {
+    public ItemRawNBT(ItemTag _item) {
         item = _item;
     }
 
@@ -80,9 +80,12 @@ public class ItemRawNBT implements Property {
                 // Stew specific
                 "Effects",
                 // Lodestone compass specific
-                "LodestoneDimension", "LodestonePos", "LodestoneTracked",
+                //"LodestoneDimension", "LodestonePos", // Temporarily sent through due to "Dimension" inconsistency, and compatibility with unloaded worlds
+                "LodestoneTracked",
                 // Bundle specific
-                "Items"
+                "Items",
+                // Goat Horn specific
+                "instrument",
         };
         defaultNbtKeys = new StringHolder[defaultNbtKeysRaw.length];
         for (int i = 0; i < defaultNbtKeysRaw.length; i++) {

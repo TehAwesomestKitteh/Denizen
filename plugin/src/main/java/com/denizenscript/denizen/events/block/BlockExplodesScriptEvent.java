@@ -2,7 +2,7 @@ package com.denizenscript.denizen.events.block;
 
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizen.objects.LocationTag;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.ArgumentHelper;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -40,29 +40,22 @@ public class BlockExplodesScriptEvent extends BukkitScriptEvent implements Liste
     // -->
 
     public BlockExplodesScriptEvent() {
-        instance = this;
         registerCouldMatcher("<block> explodes");
     }
 
-    public static BlockExplodesScriptEvent instance;
     public BlockExplodeEvent event;
     public List<Block> blocks;
     public LocationTag location;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!location.tryAdvancedMatcher(path.eventArgAt(0))) {
+        if (!path.tryArgObject(0, location)) {
             return false;
         }
         if (!runInCheck(path, location)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "BlockExplodes";
     }
 
     @Override

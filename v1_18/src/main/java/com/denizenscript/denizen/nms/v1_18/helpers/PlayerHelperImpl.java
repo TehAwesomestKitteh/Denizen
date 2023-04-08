@@ -2,7 +2,9 @@ package com.denizenscript.denizen.nms.v1_18.helpers;
 
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.nms.NMSHandler;
+import com.denizenscript.denizen.nms.abstracts.ImprovedOfflinePlayer;
 import com.denizenscript.denizen.nms.enums.CustomEntityType;
+import com.denizenscript.denizen.nms.interfaces.PlayerHelper;
 import com.denizenscript.denizen.nms.v1_18.Handler;
 import com.denizenscript.denizen.nms.v1_18.ReflectionMappingsInfo;
 import com.denizenscript.denizen.nms.v1_18.impl.ImprovedOfflinePlayerImpl;
@@ -18,12 +20,9 @@ import com.denizenscript.denizen.utilities.FormattedTextHelper;
 import com.denizenscript.denizen.utilities.entity.DenizenEntityType;
 import com.denizenscript.denizen.utilities.entity.FakeEntity;
 import com.denizenscript.denizencore.objects.Mechanism;
-import com.denizenscript.denizencore.utilities.CoreUtilities;
-import com.mojang.authlib.GameProfile;
-import com.denizenscript.denizen.nms.abstracts.ImprovedOfflinePlayer;
-import com.denizenscript.denizen.nms.interfaces.PlayerHelper;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.md_5.bungee.api.ChatColor;
@@ -33,10 +32,10 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerEntity;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.players.ServerOpList;
 import net.minecraft.server.players.ServerOpListEntry;
@@ -51,11 +50,10 @@ import org.bukkit.*;
 import org.bukkit.boss.BossBar;
 import org.bukkit.craftbukkit.v1_18_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_18_R2.block.data.CraftBlockData;
 import org.bukkit.craftbukkit.v1_18_R2.boss.CraftBossBar;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_18_R2.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_18_R2.util.CraftMagicNumbers;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -279,11 +277,6 @@ public class PlayerHelperImpl extends PlayerHelper {
     }
 
     @Override
-    public float getAttackCooldownPercent(Player player) {
-        return ((CraftPlayer) player).getHandle().getAttackStrengthScale(0.5f);
-    }
-
-    @Override
     public void setAttackCooldown(Player player, int ticks) {
         try {
             ATTACK_COOLDOWN_TICKS.setInt(((CraftPlayer) player).getHandle(), ticks);
@@ -299,11 +292,6 @@ public class PlayerHelperImpl extends PlayerHelper {
         return ((CraftWorld) chunk.getWorld()).getHandle().getChunkSource().chunkMap
                 .getPlayers(new ChunkPos(chunk.getX(), chunk.getZ()), false).stream()
                 .anyMatch(entityPlayer -> entityPlayer.getUUID().equals(player.getUniqueId()));
-    }
-
-    @Override
-    public int getPing(Player player) {
-        return ((CraftPlayer) player).getHandle().latency;
     }
 
     @Override
@@ -330,11 +318,6 @@ public class PlayerHelperImpl extends PlayerHelper {
     @Override
     public ImprovedOfflinePlayer getOfflineData(UUID uuid) {
         return new ImprovedOfflinePlayerImpl(uuid);
-    }
-
-    @Override
-    public ImprovedOfflinePlayer getOfflineData(OfflinePlayer offlinePlayer) {
-        return new ImprovedOfflinePlayerImpl(offlinePlayer.getUniqueId());
     }
 
     @Override
@@ -384,11 +367,6 @@ public class PlayerHelperImpl extends PlayerHelper {
     }
 
     @Override
-    public void doAttack(Player attacker, Entity victim) {
-        ((CraftPlayer) attacker).getHandle().attack(((CraftEntity) victim).getHandle());
-    }
-
-    @Override
     public boolean getSpawnForced(Player player) {
         return ((CraftPlayer) player).getHandle().isRespawnForced();
     }
@@ -410,20 +388,21 @@ public class PlayerHelperImpl extends PlayerHelper {
     }
 
     @Override
-    public void sendPlayerInfoAddPacket(Player player, ProfileEditMode mode, String name, String display, UUID id, String texture, String signature, int latency, GameMode gameMode) {
-        ClientboundPlayerInfoPacket.Action action = mode == ProfileEditMode.ADD ? ClientboundPlayerInfoPacket.Action.ADD_PLAYER :
-                (mode == ProfileEditMode.UPDATE_DISPLAY ? ClientboundPlayerInfoPacket.Action.UPDATE_DISPLAY_NAME : ClientboundPlayerInfoPacket.Action.UPDATE_LATENCY);
+    public void sendPlayerInfoAddPacket(Player player, EnumSet<ProfileEditMode> editModes, String name, String display, UUID id, String texture, String signature, int latency, GameMode gameMode, boolean listed) {
+        ProfileEditMode editMode = editModes.stream().findFirst().get();
+        ClientboundPlayerInfoPacket.Action action = editMode == ProfileEditMode.ADD ? ClientboundPlayerInfoPacket.Action.ADD_PLAYER :
+                (editMode == ProfileEditMode.UPDATE_DISPLAY ? ClientboundPlayerInfoPacket.Action.UPDATE_DISPLAY_NAME : ClientboundPlayerInfoPacket.Action.UPDATE_LATENCY);
         ClientboundPlayerInfoPacket packet = new ClientboundPlayerInfoPacket(action);
         GameProfile profile = new GameProfile(id, name);
         if (texture != null) {
             profile.getProperties().put("textures", new Property("textures", texture, signature));
         }
-        packet.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(profile, latency, GameType.byName(CoreUtilities.toLowerCase(gameMode.name())), display == null ? null : Handler.componentToNMS(FormattedTextHelper.parse(display, ChatColor.WHITE))));
+        packet.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(profile, latency, gameMode == null ? null : GameType.byId(gameMode.getValue()), display == null ? null : Handler.componentToNMS(FormattedTextHelper.parse(display, ChatColor.WHITE))));
         PacketHelperImpl.send(player, packet);
     }
 
     @Override
-    public void sendPlayerRemovePacket(Player player, UUID id) {
+    public void sendPlayerInfoRemovePacket(Player player, UUID id) {
         ClientboundPlayerInfoPacket packet = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER);
         GameProfile profile = new GameProfile(id, "name");
         packet.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(profile, 0, null, null));
@@ -433,12 +412,11 @@ public class PlayerHelperImpl extends PlayerHelper {
     @Override
     public void sendClimbableMaterials(Player player, List<Material> materials) {
         Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> packetInput = TagNetworkSerialization.serializeTagsToNetwork(((CraftServer) Bukkit.getServer()).getServer().registryAccess());
-        TagNetworkSerialization.NetworkPayload payload = packetInput.get(Registry.BLOCK_REGISTRY);
-        Map<ResourceLocation, IntList> tags = ReflectionHelper.getFieldValue(TagNetworkSerialization.NetworkPayload.class, ReflectionMappingsInfo.TagNetworkSerialization_NetworkPayload_tags, payload);
+        Map<ResourceLocation, IntList> tags = ReflectionHelper.getFieldValue(TagNetworkSerialization.NetworkPayload.class, ReflectionMappingsInfo.TagNetworkSerialization_NetworkPayload_tags, packetInput.get(Registry.BLOCK_REGISTRY));
         IntList intList = tags.get(BlockTags.CLIMBABLE.location());
         intList.clear();
         for (Material material : materials) {
-            intList.add(Registry.BLOCK.getId(((CraftBlockData) material.createBlockData()).getState().getBlock()));
+            intList.add(Registry.BLOCK.getId(CraftMagicNumbers.getBlock(material)));
         }
         PacketHelperImpl.send(player, new ClientboundUpdateTagsPacket(packetInput));
     }

@@ -3,25 +3,25 @@ package com.denizenscript.denizen.nms.v1_19;
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.abstracts.*;
+import com.denizenscript.denizen.nms.util.PlayerProfile;
+import com.denizenscript.denizen.nms.util.jnbt.CompoundTag;
+import com.denizenscript.denizen.nms.util.jnbt.Tag;
 import com.denizenscript.denizen.nms.v1_19.helpers.*;
 import com.denizenscript.denizen.nms.v1_19.impl.BiomeNMSImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.ProfileEditorImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.SidebarImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.blocks.BlockLightImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.jnbt.CompoundTagImpl;
-import com.denizenscript.denizen.nms.util.jnbt.Tag;
 import com.denizenscript.denizen.objects.ItemTag;
-import com.denizenscript.denizen.utilities.AdvancedTextImpl;
 import com.denizenscript.denizen.utilities.FormattedTextHelper;
+import com.denizenscript.denizen.utilities.PaperAPITools;
 import com.denizenscript.denizencore.utilities.CoreConfiguration;
+import com.denizenscript.denizencore.utilities.CoreUtilities;
+import com.denizenscript.denizencore.utilities.ReflectionHelper;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import com.denizenscript.denizen.nms.util.PlayerProfile;
-import com.denizenscript.denizencore.utilities.ReflectionHelper;
-import com.denizenscript.denizen.nms.util.jnbt.CompoundTag;
-import com.denizenscript.denizencore.utilities.CoreUtilities;
-import com.denizenscript.denizencore.utilities.debugging.Debug;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -30,7 +30,7 @@ import net.md_5.bungee.api.chat.hover.content.Item;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.chat.ComponentSerializer;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.TagParser;
@@ -40,6 +40,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.Container;
 import net.minecraft.world.Nameable;
 import net.minecraft.world.entity.Entity;
@@ -50,16 +51,18 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_19_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftInventory;
-import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftInventoryCustom;
-import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftInventoryView;
-import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_19_R1.persistence.CraftPersistentDataContainer;
-import org.bukkit.craftbukkit.v1_19_R1.util.CraftChatMessage;
-import org.bukkit.craftbukkit.v1_19_R1.util.CraftMagicNumbers;
+import org.bukkit.boss.BossBar;
+import org.bukkit.craftbukkit.v1_19_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.boss.CraftBossBar;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R3.inventory.CraftInventory;
+import org.bukkit.craftbukkit.v1_19_R3.inventory.CraftInventoryCustom;
+import org.bukkit.craftbukkit.v1_19_R3.inventory.CraftInventoryView;
+import org.bukkit.craftbukkit.v1_19_R3.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_19_R3.persistence.CraftPersistentDataContainer;
+import org.bukkit.craftbukkit.v1_19_R3.util.CraftChatMessage;
+import org.bukkit.craftbukkit.v1_19_R3.util.CraftMagicNumbers;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
@@ -72,6 +75,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class Handler extends NMSHandler {
 
@@ -84,7 +88,6 @@ public class Handler extends NMSHandler {
         entityHelper = new EntityHelperImpl();
         fishingHelper = new FishingHelperImpl();
         itemHelper = new ItemHelperImpl();
-        soundHelper = new SoundHelperImpl();
         packetHelper = new PacketHelperImpl();
         particleHelper = new ParticleHelper();
         playerHelper = new PlayerHelperImpl();
@@ -109,7 +112,7 @@ public class Handler extends NMSHandler {
 
     @Override
     public boolean isCorrectMappingsCode() {
-        return ((CraftMagicNumbers) CraftMagicNumbers.INSTANCE).getMappingsVersion().equals("7b9de0da1357e5b251eddde9aa762916");
+        return ((CraftMagicNumbers) CraftMagicNumbers.INSTANCE).getMappingsVersion().equals("3009edc0fff87fa34680686663bd59df");
     }
 
     @Override
@@ -170,11 +173,6 @@ public class Handler extends NMSHandler {
         return null;
     }
 
-    @Override
-    public int getPort() {
-        return ((CraftServer) Bukkit.getServer()).getServer().getPort();
-    }
-
     public static MethodHandle PAPER_INVENTORY_TITLE_GETTER;
 
     @Override
@@ -185,7 +183,7 @@ public class Handler extends NMSHandler {
                 if (PAPER_INVENTORY_TITLE_GETTER == null) {
                     PAPER_INVENTORY_TITLE_GETTER = ReflectionHelper.getMethodHandle(nms.getClass(), "title");
                 }
-                return AdvancedTextImpl.instance.parseComponent(PAPER_INVENTORY_TITLE_GETTER.invoke(nms), ChatColor.BLACK);
+                return PaperAPITools.instance.parseComponent(PAPER_INVENTORY_TITLE_GETTER.invoke(nms));
             }
             catch (Throwable ex) {
                 Debug.echoError(ex);
@@ -260,7 +258,7 @@ public class Handler extends NMSHandler {
     public List<BiomeNMS> getBiomes(World world) {
         ServerLevel level = ((CraftWorld) world).getHandle();
         ArrayList<BiomeNMS> output = new ArrayList<>();
-        for (Map.Entry<ResourceKey<Biome>, Biome> pair : level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).entrySet()) {
+        for (Map.Entry<ResourceKey<Biome>, Biome> pair : level.registryAccess().registryOrThrow(Registries.BIOME).entrySet()) {
             output.add(new BiomeNMSImpl(level, pair.getKey().location().toString()));
         }
         return output;
@@ -269,7 +267,7 @@ public class Handler extends NMSHandler {
     @Override
     public BiomeNMS getBiomeNMS(World world, String name) {
         BiomeNMSImpl impl = new BiomeNMSImpl(((CraftWorld) world).getHandle(), name);
-        if (impl.biomeBase == null) {
+        if (impl.biomeHolder == null) {
             return null;
         }
         return impl;
@@ -280,7 +278,7 @@ public class Handler extends NMSHandler {
         // Based on CraftWorld source
         ServerLevel level = ((CraftWorld) block.getWorld()).getHandle();
         Holder<Biome> biome = level.getNoiseBiome(block.getX() >> 2, block.getY() >> 2, block.getZ() >> 2);
-        ResourceLocation key = level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getKey(biome.value());
+        ResourceLocation key = level.registryAccess().registryOrThrow(Registries.BIOME).getKey(biome.value());
         String keyText = key.getNamespace().equals("minecraft") ? key.getPath() : key.toString();
         return new BiomeNMSImpl(level, keyText);
     }
@@ -294,7 +292,7 @@ public class Handler extends NMSHandler {
         if (contentObject instanceof Text) {
             Object value = ((Text) contentObject).getValue();
             if (value instanceof BaseComponent[]) {
-                return FormattedTextHelper.stringify((BaseComponent[]) value, ChatColor.WHITE);
+                return FormattedTextHelper.stringify((BaseComponent[]) value);
             }
             else {
                 return value.toString();
@@ -305,7 +303,7 @@ public class Handler extends NMSHandler {
             try {
                 net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
                 tag.putString("id", item.getId());
-                tag.putByte("Count", (byte) item.getCount());
+                tag.putByte("Count", item.getCount() == -1 ? 1 : (byte) item.getCount());
                 if (item.getTag() != null && item.getTag().getNbt() != null) {
                     tag.put("tag", TagParser.parseTag(item.getTag().getNbt()));
                 }
@@ -356,13 +354,36 @@ public class Handler extends NMSHandler {
         return null;
     }
 
+    @Override
+    public UUID getBossbarUUID(BossBar bar) {
+        return ((CraftBossBar) bar).getHandle().getId();
+    }
+
+    public static MethodHandle BOSSBAR_ID_SETTER = ReflectionHelper.getFinalSetterForFirstOfType(BossEvent.class, UUID.class);
+
+    @Override
+    public void setBossbarUUID(BossBar bar, UUID id) {
+        try {
+            BOSSBAR_ID_SETTER.invoke(((CraftBossBar) bar).getHandle(), id);
+        }
+        catch (Throwable ex) {
+            Debug.echoError(ex);
+        }
+    }
+
     public static BaseComponent[] componentToSpigot(Component nms) {
+        if (nms == null) {
+            return null;
+        }
         String json = Component.Serializer.toJson(nms);
         return ComponentSerializer.parse(json);
     }
 
     public static MutableComponent componentToNMS(BaseComponent[] spigot) {
-        String json = ComponentSerializer.toString(spigot);
+        if (spigot == null) {
+            return null;
+        }
+        String json = FormattedTextHelper.componentToJson(spigot);
         return Component.Serializer.fromJson(json);
     }
 }

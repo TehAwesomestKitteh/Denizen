@@ -9,8 +9,11 @@ import com.denizenscript.denizen.scripts.containers.core.ItemScriptHelper;
 import com.denizenscript.denizen.tags.BukkitTagContext;
 import com.denizenscript.denizen.utilities.NotedAreaTracker;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
+import com.denizenscript.denizen.utilities.inventory.SlotHelper;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.flags.FlaggableObject;
+import com.denizenscript.denizencore.objects.ObjectTag;
+import com.denizenscript.denizencore.objects.core.JavaReflectedObjectTag;
 import com.denizenscript.denizencore.objects.notable.Notable;
 import com.denizenscript.denizencore.objects.notable.NoteManager;
 import com.denizenscript.denizencore.tags.TagContext;
@@ -393,6 +396,10 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
                 return true;
             }
         }
+        int bracketIndex = text.indexOf('[');
+        if (bracketIndex != -1) {
+            return ItemTag.matches(text);
+        }
         if (MaterialTag.matches(text)) {
             MaterialTag mat = MaterialTag.valueOf(text, CoreUtilities.noDebugContext);
             if (mat == null || !mat.getMaterial().isItem()) {
@@ -551,6 +558,14 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
     }
 
     @Override
+    public ObjectTag getContext(String name) {
+        switch (name) {
+            case "reflect_event": return currentEvent == null ? null : new JavaReflectedObjectTag(currentEvent);
+        }
+        return super.getContext(name);
+    }
+
+    @Override
     public void destroy() {
         if (priorityHandlers != null) {
             for (BukkitScriptEvent event : priorityHandlers.values()) {
@@ -581,7 +596,7 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
             String bukkitPriority = path.switches.get("bukkit_priority");
             if (bukkitPriority != null) {
                 try {
-                    EventPriority priority = EventPriority.valueOf(bukkitPriority.toUpperCase());
+                    EventPriority priority = EventPriority.valueOf(CoreUtilities.toUpperCase(bukkitPriority));
                     BukkitScriptEvent handler = priorityHandlers.get(priority);
                     if (handler == null) {
                         handler = (BukkitScriptEvent) clone();
@@ -631,7 +646,7 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
     }
 
     public boolean runLocationFlaggedCheck(ScriptPath path, String switchName, Location location) {
-        if (!path.switches.containsKey(switchName)) { // NOTE: opti to avoid 'getFlagTracker' call, also prevents pre-1.16 borks
+        if (!path.switches.containsKey(switchName)) { // NOTE: opti to avoid 'getFlagTracker' call
             return true;
         }
         return runFlaggedCheck(path, switchName, location == null ? null : new LocationTag(location).getFlagTracker());
@@ -781,6 +796,14 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
         }
     }
 
+    public static boolean trySlot(ScriptPath path, String switchName, Entity entity, int slot) {
+        String slotMatch = path.switches.get(switchName);
+        if (slotMatch != null) {
+            return SlotHelper.doesMatch(slotMatch, entity, slot);
+        }
+        return true;
+    }
+
     public static boolean runWithCheck(ScriptPath path, ItemTag held) {
         return runWithCheck(path, held, "with");
     }
@@ -826,7 +849,12 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
             return false;
         }
         for (String permName : CoreUtilities.split(perm, '|')) {
-            if (!player.getPlayerEntity().hasPermission(permName)) {
+            boolean expect = true;
+            if (permName.startsWith("!")) {
+                permName = permName.substring(1);
+                expect = false;
+            }
+            if (player.getPlayerEntity().hasPermission(permName) != expect) {
                 return false;
             }
         }
@@ -925,6 +953,7 @@ public abstract class BukkitScriptEvent extends ScriptEvent {
     // And thus should be fine. One limitation you should note is demonstrated in the second example event:
     // The normal guarantees of the event are no longer present (eg that the entity is still valid) and as such
     // you should validate these expectations remain true after the event (as seen with the 'if is_spawned' check).
+    // (See also <@link language Script Event After vs On>)
     //
     // If you need determine changes to the event, you can instead use 'on' but add a 'wait 1t' after the determine but before other script logic.
     // This allows the risky parts to be after the event and outside the problem area, but still determine changes to the event.

@@ -49,13 +49,13 @@ public class MaterialSwitchable implements Property {
             "switched"
     };
 
-    private MaterialSwitchable(MaterialTag _material) {
+    public MaterialSwitchable(MaterialTag _material) {
         material = _material;
     }
 
     public MaterialTag material;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <MaterialTag.switched>
@@ -76,7 +76,7 @@ public class MaterialSwitchable implements Property {
         // - a hopper is NOT being powered by redstone
         // - a sculk_shrieker can summon a warden
         // -->
-        PropertyParser.<MaterialSwitchable, ElementTag>registerStaticTag(ElementTag.class, "switched", (attribute, material) -> {
+        PropertyParser.registerStaticTag(MaterialSwitchable.class, ElementTag.class, "switched", (attribute, material) -> {
             return new ElementTag(material.getState());
         });
     }

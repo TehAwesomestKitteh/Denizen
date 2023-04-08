@@ -3,7 +3,7 @@ package com.denizenscript.denizen.scripts.commands.player;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.utilities.Utilities;
 import com.denizenscript.denizen.utilities.command.TabCompleteHelper;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.utilities.entity.FakeEntity;
@@ -126,7 +126,7 @@ public class FakeSpawnCommand extends AbstractCommand {
         }
         else {
             FakeEntity created = FakeEntity.showFakeEntityTo(players, entity, location, duration);
-            scriptEntry.addObject("faked_entity", created.entity);
+            scriptEntry.saveObject("faked_entity", created.entity);
         }
     }
 }

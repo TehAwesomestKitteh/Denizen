@@ -5,10 +5,10 @@ import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.NMSVersion;
 import com.denizenscript.denizen.objects.*;
 import com.denizenscript.denizen.scripts.containers.core.InventoryScriptHelper;
-import com.denizenscript.denizen.utilities.AdvancedTextImpl;
+import com.denizenscript.denizen.utilities.PaperAPITools;
 import com.denizenscript.denizen.utilities.Conversion;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.inventory.InventoryTrackerSystem;
 import com.denizenscript.denizen.utilities.inventory.SlotHelper;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
@@ -19,7 +19,6 @@ import com.denizenscript.denizencore.objects.properties.PropertyParser;
 import com.denizenscript.denizencore.scripts.ScriptEntry;
 import com.denizenscript.denizencore.scripts.commands.AbstractCommand;
 import com.denizenscript.denizencore.scripts.commands.core.FlagCommand;
-import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
 import com.denizenscript.denizencore.utilities.data.DataAction;
 import com.denizenscript.denizencore.utilities.data.DataActionHelper;
 import org.bukkit.Bukkit;
@@ -73,7 +72,7 @@ public class InventoryCommand extends AbstractCommand implements Listener {
     // open random inventory:
     //   type: task
     //   script:
-    //   - inventory open "d:generic[size=18;title=<red>My <green>Awesome <blue>Inventory;contents=air|snow_ball]"
+    //   - inventory open "d:generic[size=18;title=<red>My <green>Awesome <blue>Inventory;contents=air|snowball]"
     // </code>
     //
     // -->
@@ -126,7 +125,7 @@ public class InventoryCommand extends AbstractCommand implements Listener {
     //
     // @Usage
     // Use to open a virtual inventory with a title and some items.
-    // - inventory open d:generic[size=27;title=BestInventory;contents=snow_ball|stick]
+    // - inventory open d:generic[size=27;title=BestInventory;contents=snowball|stick]
     //
     // @Usage
     // Use to open another player's inventory.
@@ -134,7 +133,7 @@ public class InventoryCommand extends AbstractCommand implements Listener {
     //
     // @Usage
     // Use to remove all items from a chest, except any items in the specified list.
-    // - inventory keep d:<context.location.inventory> o:snow_ball|ItemScript
+    // - inventory keep d:<context.location.inventory> o:snowball|ItemScript
     //
     // @Usage
     // Use to remove all sticks and stones from the player's inventory.
@@ -161,7 +160,7 @@ public class InventoryCommand extends AbstractCommand implements Listener {
     // - inventory flag slot:hand my_target:<player.cursor_on> expire:1d
     // -->
 
-    private enum Action {OPEN, CLOSE, COPY, MOVE, SWAP, ADD, REMOVE, SET, KEEP, EXCLUDE, FILL, CLEAR, UPDATE, ADJUST, FLAG}
+    private enum Action {OPEN, CLOSE, COPY, MOVE, SWAP, SET, KEEP, EXCLUDE, FILL, CLEAR, UPDATE, ADJUST, FLAG}
 
     @Override
     public void addCustomTabCompletions(TabCompletionsBuilder tab) {
@@ -287,7 +286,7 @@ public class InventoryCommand extends AbstractCommand implements Listener {
 
     public void doSpecialOpen(InventoryType type, Player player, InventoryTag destination) {
         try {
-            if (destination.customTitle != null) {
+            if (destination.customTitle != null || destination.idType.equals("script")) {
                 currentAltType = destination.getIdType();
                 currentAltTitle = destination.customTitle;
                 currentAltHolder = destination.getIdHolder();
@@ -299,7 +298,7 @@ public class InventoryCommand extends AbstractCommand implements Listener {
             }
             InventoryView view;
             if (type == InventoryType.ANVIL) {
-                view = AdvancedTextImpl.instance.openAnvil(player, currentAltLocation);
+                view = PaperAPITools.instance.openAnvil(player, currentAltLocation);
             }
             else if (type == InventoryType.WORKBENCH) {
                 view = player.openWorkbench(currentAltLocation, true);
@@ -392,24 +391,6 @@ public class InventoryCommand extends AbstractCommand implements Listener {
                     InventoryTag temp = new InventoryTag(destination.getInventory().getContents());
                     replace(origin, destination);
                     replace(temp, origin);
-                    break;
-                // Add origin's contents to destination
-                case ADD:
-                    BukkitImplDeprecations.oldInventoryCommands.warn(scriptEntry);
-                    if (origin == null) {
-                        Debug.echoError(scriptEntry, "Missing origin argument!");
-                        return;
-                    }
-                    destination.add(slotId, origin.getContents());
-                    break;
-                // Remove origin's contents from destination
-                case REMOVE:
-                    BukkitImplDeprecations.oldInventoryCommands.warn(scriptEntry);
-                    if (origin == null) {
-                        Debug.echoError(scriptEntry, "Missing origin argument!");
-                        return;
-                    }
-                    remove(destination.getInventory(), origin.getContents());
                     break;
                 // Set items by slot
                 case SET:

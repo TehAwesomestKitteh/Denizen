@@ -1,7 +1,8 @@
 package com.denizenscript.denizen.objects.properties.item;
 
-import com.denizenscript.denizen.objects.ColorTag;
 import com.denizenscript.denizen.objects.ItemTag;
+import com.denizenscript.denizen.objects.properties.bukkit.BukkitColorExtensions;
+import com.denizenscript.denizencore.objects.core.ColorTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.Mechanism;
 import com.denizenscript.denizencore.objects.core.ListTag;
@@ -19,6 +20,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ItemFirework implements Property {
 
@@ -41,7 +43,7 @@ public class ItemFirework implements Property {
             "firework", "firework_power"
     };
 
-    private ItemFirework(ItemTag _item) {
+    public ItemFirework(ItemTag _item) {
         item = _item;
     }
 
@@ -89,14 +91,20 @@ public class ItemFirework implements Property {
                 if (effect == null) {
                     continue;
                 }
-                Color ColOne = effect.getColors() != null && effect.getColors().size() > 0 ? effect.getColors().get(0) : Color.BLUE;
-                Color ColTwo = effect.getFadeColors() != null && effect.getFadeColors().size() > 0 ? effect.getFadeColors().get(0) : ColOne;
+                ListTag colors = new ListTag(effect.getColors().stream().map(BukkitColorExtensions::fromColor).collect(Collectors.toList()));
+                ListTag fadeColors = new ListTag(effect.getFadeColors().stream().map(BukkitColorExtensions::fromColor).collect(Collectors.toList()));
+                if (colors.isEmpty()) {
+                    colors.addObject(BukkitColorExtensions.fromColor(Color.BLUE));
+                }
+                if (fadeColors.isEmpty()) {
+                    fadeColors.addObject(colors.getObject(0));
+                }
                 MapTag effectMap = new MapTag();
                 effectMap.putObject("trail", new ElementTag(effect.hasTrail()));
                 effectMap.putObject("flicker", new ElementTag(effect.hasFlicker()));
-                effectMap.putObject("type", new ElementTag(effect.getType().name()));
-                effectMap.putObject("color", new ColorTag(ColOne));
-                effectMap.putObject("fade_color", new ColorTag(ColTwo));
+                effectMap.putObject("type", new ElementTag(effect.getType()));
+                effectMap.putObject("color", colors.size() == 1 ? colors.getObject(0) : colors);
+                effectMap.putObject("fade_color", fadeColors.size() == 1 ? fadeColors.getObject(0) : fadeColors);
                 list.addObject(effectMap);
             }
         }
@@ -107,7 +115,7 @@ public class ItemFirework implements Property {
         return item.getItemMeta() instanceof FireworkMeta ? ((FireworkMeta) item.getItemMeta()).getPower() : 0;
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <ItemTag.firework>
@@ -118,7 +126,7 @@ public class ItemFirework implements Property {
         // Returns the firework's property value as a list, matching the non-MapTag format of the mechanism.
         // Consider instead using <@link tag ItemTag.firework_data>
         // -->
-        PropertyParser.<ItemFirework, ListTag>registerTag(ListTag.class, "firework", (attribute, object) -> {
+        PropertyParser.registerTag(ItemFirework.class, ListTag.class, "firework", (attribute, object) -> {
             return object.getFireworkData();
         });
 
@@ -130,7 +138,7 @@ public class ItemFirework implements Property {
         // @description
         // Returns the firework's property value as a ListTag of MapTags, matching the MapTag format of the mechanism.
         // -->
-        PropertyParser.<ItemFirework, ListTag>registerTag(ListTag.class, "firework_data", (attribute, object) -> {
+        PropertyParser.registerTag(ItemFirework.class, ListTag.class, "firework_data", (attribute, object) -> {
             return object.getFireworkDataMap();
         });
 
@@ -143,7 +151,7 @@ public class ItemFirework implements Property {
         // Returns the firework's power.
         // Power primarily affects how high the firework flies, with each level of power corresponding to approximately half a second of additional flight them.
         // -->
-        PropertyParser.<ItemFirework, ElementTag>registerTag(ElementTag.class, "firework_power", (attribute, object) -> {
+        PropertyParser.registerTag(ItemFirework.class, ElementTag.class, "firework_power", (attribute, object) -> {
             ItemMeta meta = object.item.getItemMeta();
             return meta instanceof FireworkMeta ? new ElementTag(((FireworkMeta) meta).getPower()) : null;
         });
@@ -151,7 +159,7 @@ public class ItemFirework implements Property {
 
     @Override
     public String getPropertyString() {
-        ListTag data = getFireworkData();
+        ListTag data = getFireworkDataMap();
         return data.size() > 0 ? data.identify() : null;
     }
 
@@ -196,6 +204,7 @@ public class ItemFirework implements Property {
         // For example: [type=ball;color=red;fade_color=green;trail=true;flicker=false]
         // 3: A single number, to set the power.
         // Types: ball, ball_large, star, burst, or creeper
+        // "color" and "fade_color" may be a list of colors.
         // Note that this is an add operation, provide no input to clear all effects.
         // @tags
         // <ItemTag.firework>
@@ -232,22 +241,14 @@ public class ItemFirework implements Property {
                                 mechanism.echoError("Invalid firework type '" + type.asString() + "'");
                             }
                         }
-                        ColorTag co = new ColorTag(Color.BLACK);
-                        if (color != null && ColorTag.matches(color.toString())) {
-                            co = ColorTag.valueOf(color.toString(), mechanism.context);
+                        List<Color> colors = Collections.singletonList(Color.BLACK);
+                        if (color != null) {
+                            colors = color.asType(ListTag.class, mechanism.context).filter(ColorTag.class, mechanism.context).stream().map(BukkitColorExtensions::getColor).collect(Collectors.toList());
                         }
-                        else if (color != null) {
-                            mechanism.echoError("Invalid color '" + color + "'");
-                        }
-                        builder.withColor(co.getColor());
+                        builder.withColor(colors);
                         if (fadeColor != null) {
-                            ColorTag fadeCo = ColorTag.valueOf(fadeColor.toString(), mechanism.context);
-                            if (fadeCo != null) {
-                                builder.withFade(fadeCo.getColor());
-                            }
-                            else {
-                                mechanism.echoError("Invalid fade color '" + fadeColor + "'");
-                            }
+                            List<Color> fadeColors = fadeColor.asType(ListTag.class, mechanism.context).filter(ColorTag.class, mechanism.context).stream().map(BukkitColorExtensions::getColor).collect(Collectors.toList());
+                            builder.withFade(fadeColors);
                         }
                         FireworkEffect built = builder.build();
                         if (meta instanceof FireworkMeta) {

@@ -31,15 +31,15 @@ public class MaterialLightable implements Property {
             "lit"
     };
 
-    private MaterialLightable(MaterialTag _material) {
+    public MaterialLightable(MaterialTag _material) {
         material = _material;
     }
 
     MaterialTag material;
 
-    public static void registerTags() {
+    public static void register() {
 
-        PropertyParser.<MaterialLightable, ElementTag>registerTag(ElementTag.class, "lit", (attribute, material) -> {
+        PropertyParser.registerTag(MaterialLightable.class, ElementTag.class, "lit", (attribute, material) -> {
             BukkitImplDeprecations.materialLit.warn(attribute.context);
             return new ElementTag(material.getLightable().isLit());
         });

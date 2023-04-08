@@ -3,7 +3,7 @@ package com.denizenscript.denizen.scripts.commands.player;
 import com.denizenscript.denizen.objects.NPCTag;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsRuntimeException;
@@ -46,6 +46,9 @@ public class ClickableCommand extends BracedCommand {
     // @Description
     // Generates a clickable command for players.
     //
+    // Generally, prefer to write a command script and simply "on_click[/yourcommandhere]" rather than using generated clickables.
+    // Generated clickables are a utility intended to enable clickables that are restricted from being normally accessed without receiving a clickable message.
+    //
     // Specify a task script to run, or put an executable script section as sub-commands.
     //
     // When running a task, optionally any definitions to pass.
@@ -60,7 +63,10 @@ public class ClickableCommand extends BracedCommand {
     // WARNING: if you use clickables very often without a duration limit, this can lead to a memory leak.
     // Clickables that have a specified max duration will occasionally be cleaned from memory.
     //
-    // Optionally specify what players are allowed to use it. Defaults to unrestricted (any player may use it).
+    // Optionally specify what players are allowed to use it. Defaults to unrestricted (any player that sees the click message may use it).
+    // Note that it is possible for a player to find the generated command ID in their logs and send it to another player to "/" execute, so if you don't restrict player access it may be abused in that way.
+    //
+    // This internally generates a command of the form "/denizenclickable <generated_id>".
     //
     // Players will need the permission "denizen.clickable" to be able to use this.
     //
@@ -151,7 +157,7 @@ public class ClickableCommand extends BracedCommand {
         if (clickable.directEntries != null) {
             ScriptUtilities.createAndStartQueueArbitrary(clickable.queueId, clickable.directEntries, data, clickable.contextSource, configure);
         }
-        else {
+        else if (clickable.script.validate() != null) {
             ScriptUtilities.createAndStartQueue(clickable.script.getContainer(), clickable.path, data, null, configure, null, clickable.queueId, clickable.definitions, clickable.context);
         }
     }
@@ -175,8 +181,8 @@ public class ClickableCommand extends BracedCommand {
                     scriptEntry.addObject("path", new ElementTag(scriptName.substring(dotIndex + 1)));
                     scriptName = scriptName.substring(0, dotIndex);
                 }
-                ScriptTag script = new ScriptTag(scriptName);
-                if (!script.isValid()) {
+                ScriptTag script = ScriptTag.valueOf(scriptName, CoreUtilities.noDebugContext);
+                if (script == null) {
                     arg.reportUnhandled();
                 }
                 else {
@@ -277,7 +283,7 @@ public class ClickableCommand extends BracedCommand {
             }
         }
         clickables.put(id, newClickable);
-        scriptEntry.addObject("command", new ElementTag("/denizenclickable " + id));
-        scriptEntry.addObject("id", new ElementTag(id.toString()));
+        scriptEntry.saveObject("command", new ElementTag("/denizenclickable " + id));
+        scriptEntry.saveObject("id", new ElementTag(id.toString()));
     }
 }

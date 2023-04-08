@@ -1,10 +1,9 @@
 package com.denizenscript.denizen.objects.properties.entity;
 
-import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.objects.EntityTag;
-import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.Mechanism;
 import com.denizenscript.denizencore.objects.ObjectTag;
+import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.properties.Property;
 import com.denizenscript.denizencore.objects.properties.PropertyParser;
 
@@ -28,18 +27,18 @@ public class EntityBodyArrows implements Property {
             "body_arrows", "clear_body_arrows"
     };
 
-    private EntityBodyArrows(EntityTag entity) {
+    public EntityBodyArrows(EntityTag entity) {
         this.entity = entity;
     }
 
     EntityTag entity;
 
-    private int getBodyArrows() {
-        return NMSHandler.entityHelper.getBodyArrows(entity.getBukkitEntity());
+    public int getBodyArrows() {
+        return entity.getLivingEntity().getArrowsInBody();
     }
 
-    private void setBodyArrows(int numArrows) {
-        NMSHandler.entityHelper.setBodyArrows(entity.getBukkitEntity(), numArrows);
+    public void setBodyArrows(int numArrows) {
+        entity.getLivingEntity().setArrowsInBody(numArrows);
     }
 
     @Override
@@ -53,7 +52,7 @@ public class EntityBodyArrows implements Property {
         return "body_arrows";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.body_arrows>
@@ -64,7 +63,7 @@ public class EntityBodyArrows implements Property {
         // Returns the number of arrows stuck in the entity's body.
         // Note: Body arrows will only be visible for players or player-type npcs.
         // -->
-        PropertyParser.<EntityBodyArrows, ElementTag>registerTag(ElementTag.class, "body_arrows", (attribute, object) -> {
+        PropertyParser.registerTag(EntityBodyArrows.class, ElementTag.class, "body_arrows", (attribute, object) -> {
             return new ElementTag(object.getBodyArrows());
         });
     }

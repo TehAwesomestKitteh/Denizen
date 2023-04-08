@@ -44,20 +44,18 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
     //
     // @Determine
     // ElementTag(Number) to set the experience level cost of the enchantment.
-    // "RESULT:" + ItemTag to change the item result (only affects metadata (like enchantments), not material/quantity/etc!).
-    // "ENCHANTS:" + MapTag to change the resultant enchantments.
+    // "RESULT:<ItemTag>" to change the item result (only affects metadata (like enchantments), not material/quantity/etc!).
+    // "ENCHANTS:<MapTag>" to change the resultant enchantments.
     //
     // @Player when the enchanter is a player.
     //
     // -->
 
     public ItemEnchantedScriptEvent() {
-        instance = this;
         registerCouldMatcher("<item> enchanted");
         registerSwitches("enchant");
     }
 
-    public static ItemEnchantedScriptEvent instance;
     public EntityTag entity;
     public LocationTag location;
     public InventoryTag inventory;
@@ -68,7 +66,7 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!item.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, item)) {
             return false;
         }
         if (!runInCheck(path, location)) {
@@ -90,15 +88,10 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
     }
 
     @Override
-    public String getName() {
-        return "ItemEnchanted";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag) {
-            if (((ElementTag) determinationObj).isInt()) {
-                cost = ((ElementTag) determinationObj).asInt();
+        if (determinationObj instanceof ElementTag element) {
+            if (element.isInt()) {
+                cost = element.asInt();
                 event.setExpLevelCost(cost);
                 return true;
             }

@@ -4,10 +4,11 @@ import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.nms.v1_19.ReflectionMappingsInfo;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizen.utilities.blocks.FakeBlock;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -18,8 +19,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R1.block.data.CraftBlockData;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.block.data.CraftBlockData;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Constructor;
@@ -34,8 +35,8 @@ public class FakeBlockHelper {
     public static Field CHUNKDATA_BLOCK_ENTITIES = ReflectionHelper.getFields(ClientboundLevelChunkPacketData.class).getFirstOfType(List.class);
     public static MethodHandle CHUNKDATA_BUFFER_SETTER = ReflectionHelper.getFinalSetterForFirstOfType(ClientboundLevelChunkPacketData.class, byte[].class);
     public static Class CHUNKDATA_BLOCKENTITYINFO_CLASS = ClientboundLevelChunkPacketData.class.getDeclaredClasses()[0];
-    public static Field CHUNKDATA_BLOCKENTITYINFO_PACKEDXZ = ReflectionHelper.getFields(CHUNKDATA_BLOCKENTITYINFO_CLASS).get(ReflectionMappingsInfo.ClientboundLevelChunkPacketData_BlockEntityInfo_packedXZ);
-    public static Field CHUNKDATA_BLOCKENTITYINFO_Y = ReflectionHelper.getFields(CHUNKDATA_BLOCKENTITYINFO_CLASS).get(ReflectionMappingsInfo.ClientboundLevelChunkPacketData_BlockEntityInfo_y);
+    public static Field CHUNKDATA_BLOCKENTITYINFO_PACKEDXZ = ReflectionHelper.getFields(CHUNKDATA_BLOCKENTITYINFO_CLASS).get(ReflectionMappingsInfo.ClientboundLevelChunkPacketDataBlockEntityInfo_packedXZ);
+    public static Field CHUNKDATA_BLOCKENTITYINFO_Y = ReflectionHelper.getFields(CHUNKDATA_BLOCKENTITYINFO_CLASS).get(ReflectionMappingsInfo.ClientboundLevelChunkPacketDataBlockEntityInfo_y);
     public static MethodHandle CHUNKPACKET_CHUNKDATA_SETTER = ReflectionHelper.getFinalSetterForFirstOfType(ClientboundLevelChunkWithLightPacket.class, ClientboundLevelChunkPacketData.class);
     public static Constructor<?> PALETTEDCONTAINER_CTOR = Arrays.stream(PalettedContainer.class.getConstructors()).filter(c -> c.getParameterCount() == 3).findFirst().get();
 
@@ -111,7 +112,7 @@ public class FakeBlockHelper {
             int worldMaxY = world.getMaxHeight();
             int minChunkY = worldMinY >> 4;
             int maxChunkY = worldMaxY >> 4;
-            Registry<Biome> biomeRegistry = ((CraftWorld) world).getHandle().registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
+            Registry<Biome> biomeRegistry = ((CraftWorld) world).getHandle().registryAccess().registryOrThrow(Registries.BIOME);
             for (int y = minChunkY; y < maxChunkY; y++) {
                 int blockCount = serial.readShort();
                 // reflected constructors as workaround for spigot remapper bug - Mojang "IdMap" became Spigot "IRegistry" but should be "Registry"

@@ -2,7 +2,7 @@ package com.denizenscript.denizen.events.player;
 
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizen.objects.*;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -35,17 +35,15 @@ public class PlayerPreparesEnchantScriptEvent extends BukkitScriptEvent implemen
     // <context.offers> returns a ListTag of the available enchanting offers, each as a MapTag with keys 'cost', 'enchantment_type', and 'level'.
     //
     // @Determine
-    // "OFFERS:" + ListTag of MapTags to set the offers available. Cannot be a different size list than the size of context.offers.
+    // "OFFERS:<ListTag>" of MapTags to set the offers available. Cannot be a different size list than the size of context.offers.
     //
     // @Player Always.
     //
     // -->
 
     public PlayerPreparesEnchantScriptEvent() {
-        instance = this;
     }
 
-    public static PlayerPreparesEnchantScriptEvent instance;
     public PrepareItemEnchantEvent event;
 
     @Override
@@ -61,15 +59,10 @@ public class PlayerPreparesEnchantScriptEvent extends BukkitScriptEvent implemen
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!new ItemTag(event.getItem()).tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, new ItemTag(event.getItem()))) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerPreparesEnchant";
     }
 
     @Override
@@ -100,7 +93,7 @@ public class PlayerPreparesEnchantScriptEvent extends BukkitScriptEvent implemen
 
     @Override
     public ScriptEntryData getScriptEntryData() {
-        return new BukkitScriptEntryData(new PlayerTag(event.getEnchanter()), null);
+        return new BukkitScriptEntryData(event.getEnchanter());
     }
 
     @Override

@@ -3,7 +3,7 @@ package com.denizenscript.denizen.paper.events;
 import com.denizenscript.denizen.events.server.ListPingScriptEvent;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.paper.PaperModule;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.ArgumentHelper;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -47,7 +47,7 @@ public class ServerListPingScriptEventPaperImpl extends ListPingScriptEvent {
         @Override public boolean removeProperty(@Nullable String s) { return false; }
         @Override public void clearProperties() { }
         @Override public boolean isComplete() { return false; }
-        @Override public @NotNull CompletableFuture<org.bukkit.profile.PlayerProfile> update() { return null; }
+        @Override public @NotNull CompletableFuture<PlayerProfile> update() { return null; }
         @Override public org.bukkit.profile.@NotNull PlayerProfile clone() { return null; }
         @Override public boolean completeFromCache() { return false; }
         @Override public boolean completeFromCache(boolean b) { return false; }
@@ -107,7 +107,7 @@ public class ServerListPingScriptEventPaperImpl extends ListPingScriptEvent {
     public ObjectTag getContext(String name) {
         switch (name) {
             case "motd":
-                return new ElementTag(PaperModule.stringifyComponent(event.motd(), ChatColor.WHITE));
+                return new ElementTag(PaperModule.stringifyComponent(event.motd()));
             case "protocol_version":
                 return new ElementTag(((PaperServerListPingEvent) event).getProtocolVersion());
             case "version_name":

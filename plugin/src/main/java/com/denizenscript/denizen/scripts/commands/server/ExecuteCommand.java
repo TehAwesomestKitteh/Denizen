@@ -3,7 +3,7 @@ package com.denizenscript.denizen.scripts.commands.server;
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.utilities.command.scripted.DenizenCommandSender;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.utilities.packets.NetworkInterceptHelper;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
@@ -208,7 +208,7 @@ public class ExecuteCommand extends AbstractCommand {
                 ServerCommandEvent sce = new ServerCommandEvent(dcs, command);
                 Bukkit.getPluginManager().callEvent(sce);
                 Denizen.getInstance().getServer().dispatchCommand(dcs, sce.getCommand());
-                scriptEntry.addObject("output", new ListTag(dcs.getOutput()));
+                scriptEntry.saveObject("output", new ListTag(dcs.getOutput()));
                 break;
         }
     }

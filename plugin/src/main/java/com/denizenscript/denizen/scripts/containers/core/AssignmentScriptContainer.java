@@ -1,6 +1,6 @@
 package com.denizenscript.denizen.scripts.containers.core;
 
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.scripts.ScriptRegistry;
 import com.denizenscript.denizencore.scripts.containers.ScriptContainer;
 import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
@@ -25,6 +25,9 @@ public class AssignmentScriptContainer extends ScriptContainer {
     // interact scripts can provide more functionality.
     // See also <@link language interact script containers>
     //
+    // Assignments scripts can be automatically disabled by adding "enabled: false" as a root key (supports any load-time-parseable tags).
+    // This will disable any "actions" on the script (but not interact scripts steps - disable the interact for that).
+    //
     // Basic structure of an assignment script:
     // <code>
     // Assignment_Script_Name:
@@ -46,9 +49,6 @@ public class AssignmentScriptContainer extends ScriptContainer {
     //     interact scripts:
     //     - <interact_script_name>
     // </code>
-    //
-    // All part of an assignment script are optional. The three features provided can be
-    // used together, but do not require one another.
     //
     // Though note that almost always you should include the 'actions:' key, usually with the 'on assignment:' action (if using triggers).
     // Refer to <@link action assignment>.

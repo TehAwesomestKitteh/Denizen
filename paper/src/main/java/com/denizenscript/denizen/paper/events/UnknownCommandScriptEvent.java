@@ -52,20 +52,13 @@ public class UnknownCommandScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public UnknownCommandScriptEvent() {
-        instance = this;
         registerCouldMatcher("command unknown");
     }
 
-    public static UnknownCommandScriptEvent instance;
     public UnknownCommandEvent event;
     public String command;
     public String rawArgs;
     public String sourceType;
-
-    @Override
-    public String getName() {
-        return "CommandUnknown";
-    }
 
     @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
@@ -96,7 +89,7 @@ public class UnknownCommandScriptEvent extends BukkitScriptEvent implements List
             return new ElementTag(rawArgs);
         }
         else if (name.equals("args")) {
-            return new ListTag(Arrays.asList(ArgumentHelper.buildArgs(rawArgs)));
+            return new ListTag(Arrays.asList(ArgumentHelper.buildArgs(rawArgs, false)));
         }
         else if (name.equals("server")) {
             return new ElementTag(sourceType.equals("server"));

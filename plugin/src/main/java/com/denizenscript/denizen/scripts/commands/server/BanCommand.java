@@ -1,6 +1,6 @@
 package com.denizenscript.denizen.scripts.commands.server;
 
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.objects.*;
@@ -111,7 +111,10 @@ public class BanCommand extends AbstractCommand {
                     scriptEntry.addObject("expire", arg.asType(TimeTag.class));
                 }
                 else {
-                    scriptEntry.addObject("expire", new TimeTag(TimeTag.now().millis() + arg.asType(DurationTag.class).getMillis()));
+                    long duration = arg.asType(DurationTag.class).getMillis();
+                    if (duration > 0) { // Explicitly consider infinite duration as null input
+                        scriptEntry.addObject("expire", new TimeTag(TimeTag.now().millis() + duration));
+                    }
                 }
             }
             else if (!scriptEntry.hasObject("source")

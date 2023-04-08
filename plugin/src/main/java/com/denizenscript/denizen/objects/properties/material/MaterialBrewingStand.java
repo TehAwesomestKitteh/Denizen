@@ -30,13 +30,13 @@ public class MaterialBrewingStand implements Property {
             "bottles"
     };
 
-    private MaterialBrewingStand(MaterialTag _material) {
+    public MaterialBrewingStand(MaterialTag _material) {
         material = _material;
     }
 
     MaterialTag material;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <MaterialTag.bottles>
@@ -47,7 +47,7 @@ public class MaterialBrewingStand implements Property {
         // Returns a list of booleans that represent whether a slot in a brewing stand has a bottle.
         // Under current implementation this always returns exactly 3 values, like "true|false|true".
         // -->
-        PropertyParser.<MaterialBrewingStand, ListTag>registerStaticTag(ListTag.class, "bottles", (attribute, material) -> {
+        PropertyParser.registerStaticTag(MaterialBrewingStand.class, ListTag.class, "bottles", (attribute, material) -> {
             return material.getBottleBooleans();
         });
     }

@@ -22,7 +22,7 @@ public class PaperItemTagProperties implements Property {
     public static final String[] handledMechs = new String[] {
     }; // None
 
-    private PaperItemTagProperties(ItemTag item) {
+    public PaperItemTagProperties(ItemTag item) {
         this.item = item;
     }
 
@@ -38,7 +38,7 @@ public class PaperItemTagProperties implements Property {
         return "PaperItemTagProperties";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <ItemTag.rarity>
@@ -48,8 +48,8 @@ public class PaperItemTagProperties implements Property {
         // @description
         // Returns the rarity of an item, as "common", "uncommon", "rare", or "epic".
         // -->
-        PropertyParser.<PaperItemTagProperties, ElementTag>registerTag(ElementTag.class, "rarity", (attribute, item) -> {
-            return new ElementTag(item.item.getItemStack().getRarity().name());
+        PropertyParser.registerTag(PaperItemTagProperties.class, ElementTag.class, "rarity", (attribute, item) -> {
+            return new ElementTag(item.item.getItemStack().getRarity());
         });
     }
 

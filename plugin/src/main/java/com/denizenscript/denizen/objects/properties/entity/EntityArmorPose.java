@@ -37,7 +37,7 @@ public class EntityArmorPose implements Property {
             "armor_pose"
     };
 
-    private EntityArmorPose(EntityTag ent) {
+    public EntityArmorPose(EntityTag ent) {
         entity = ent;
     }
 
@@ -53,7 +53,7 @@ public class EntityArmorPose implements Property {
         return "armor_pose";
     }
 
-    private ListTag getPoseList() {
+    public ListTag getPoseList() {
         ArmorStand armorStand = (ArmorStand) entity.getBukkitEntity();
         ListTag list = new ListTag();
         for (PosePart posePart : PosePart.values()) {
@@ -72,7 +72,7 @@ public class EntityArmorPose implements Property {
         return map;
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.armor_pose_map>
@@ -84,7 +84,7 @@ public class EntityArmorPose implements Property {
         // For example, head=4.5,3,4.5;body=5.4,3.2,1
         // Angles are in radians!
         // -->
-        PropertyParser.<EntityArmorPose, MapTag>registerTag(MapTag.class, "armor_pose_map", (attribute, entity) -> {
+        PropertyParser.registerTag(EntityArmorPose.class, MapTag.class, "armor_pose_map", (attribute, entity) -> {
             return entity.getPoseMap();
         });
 
@@ -97,7 +97,7 @@ public class EntityArmorPose implements Property {
         // @description
         // Deprecated in favor of <@link tag EntityTag.armor_pose_map>
         // -->
-        PropertyParser.<EntityArmorPose, ListTag>registerTag(ListTag.class, "armor_pose_list", (attribute, entity) -> {
+        PropertyParser.registerTag(EntityArmorPose.class, ListTag.class, "armor_pose_list", (attribute, entity) -> {
             BukkitImplDeprecations.entityArmorPose.warn(attribute.context);
             return entity.getPoseList();
         });
@@ -111,7 +111,7 @@ public class EntityArmorPose implements Property {
         // @description
         // Deprecated in favor of <@link tag EntityTag.armor_pose_map>
         // -->
-        PropertyParser.<EntityArmorPose, LocationTag>registerTag(LocationTag.class, "armor_pose", (attribute, entity) -> {
+        PropertyParser.registerTag(EntityArmorPose.class, LocationTag.class, "armor_pose", (attribute, entity) -> {
             BukkitImplDeprecations.entityArmorPose.warn(attribute.context);
             if (!attribute.hasParam()) {
                 return null;
@@ -176,15 +176,15 @@ public class EntityArmorPose implements Property {
         }
     }
 
-    private static LocationTag fromEulerAngle(EulerAngle eulerAngle) {
+    public static LocationTag fromEulerAngle(EulerAngle eulerAngle) {
         return new LocationTag(null, eulerAngle.getX(), eulerAngle.getY(), eulerAngle.getZ());
     }
 
-    private static EulerAngle toEulerAngle(LocationTag location) {
+    public static EulerAngle toEulerAngle(LocationTag location) {
         return new EulerAngle(location.getX(), location.getY(), location.getZ());
     }
 
-    private enum PosePart {
+    public enum PosePart {
         HEAD {
             @Override
             EulerAngle getAngle(ArmorStand armorStand) {

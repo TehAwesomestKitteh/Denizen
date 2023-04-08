@@ -3,7 +3,7 @@ package com.denizenscript.denizen.events.entity;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizen.objects.MaterialTag;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizencore.objects.ObjectTag;
@@ -37,11 +37,9 @@ public class EntityChangesBlockScriptEvent extends BukkitScriptEvent implements 
     // -->
 
     public EntityChangesBlockScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> changes <block> (into <block>)");
     }
 
-    public static EntityChangesBlockScriptEvent instance;
     public EntityTag entity;
     public LocationTag location;
     public MaterialTag old_material;
@@ -54,7 +52,7 @@ public class EntityChangesBlockScriptEvent extends BukkitScriptEvent implements 
         if (!entity.tryAdvancedMatcher(entName)) {
             return false;
         }
-        if (!old_material.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, old_material)) {
             return false;
         }
         if (path.eventArgLowerAt(3).equals("into")) {
@@ -71,11 +69,6 @@ public class EntityChangesBlockScriptEvent extends BukkitScriptEvent implements 
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "EntityChangesBlock";
     }
 
     @Override

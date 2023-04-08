@@ -34,7 +34,7 @@ public class EntityAttributeBaseValues implements Property {
             "attribute_base_values"
     };
 
-    private EntityAttributeBaseValues(EntityTag entity) {
+    public EntityAttributeBaseValues(EntityTag entity) {
         this.entity = entity;
     }
 
@@ -67,7 +67,7 @@ public class EntityAttributeBaseValues implements Property {
         return "attribute_base_values";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.has_attribute[<attribute>]>
@@ -78,7 +78,7 @@ public class EntityAttributeBaseValues implements Property {
         // Valid attribute names are listed at <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html>
         // See also <@link language attribute modifiers>.
         // -->
-        PropertyParser.<EntityAttributeBaseValues, ElementTag>registerTag(ElementTag.class, "has_attribute", (attribute, object) -> {
+        PropertyParser.registerTag(EntityAttributeBaseValues.class, ElementTag.class, "has_attribute", (attribute, object) -> {
             if (!(attribute.hasParam() && attribute.getParamElement().matchesEnum(Attribute.class))) {
                 attribute.echoError("Invalid entity.has_attribute[...] input: must be a valid attribute name.");
                 return null;
@@ -98,7 +98,7 @@ public class EntityAttributeBaseValues implements Property {
         // Valid attribute names are listed at <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html>
         // See also <@link language attribute modifiers>.
         // -->
-        PropertyParser.<EntityAttributeBaseValues, ElementTag>registerTag(ElementTag.class, "attribute_value", (attribute, object) -> {
+        PropertyParser.registerTag(EntityAttributeBaseValues.class, ElementTag.class, "attribute_value", (attribute, object) -> {
             if (!(attribute.hasParam() && attribute.getParamElement().matchesEnum(Attribute.class))) {
                 attribute.echoError("Invalid entity.attribute_value[...] input: must be a valid attribute name.");
                 return null;
@@ -123,7 +123,7 @@ public class EntityAttributeBaseValues implements Property {
         // Valid attribute names are listed at <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html>
         // See also <@link language attribute modifiers>.
         // -->
-        PropertyParser.<EntityAttributeBaseValues, ElementTag>registerTag(ElementTag.class, "attribute_base_value", (attribute, object) -> {
+        PropertyParser.registerTag(EntityAttributeBaseValues.class, ElementTag.class, "attribute_base_value", (attribute, object) -> {
             if (!(attribute.hasParam() && attribute.getParamElement().matchesEnum(Attribute.class))) {
                 attribute.echoError("Invalid entity.attribute_base_value[...] input: must be a valid attribute name.");
                 return null;
@@ -148,7 +148,7 @@ public class EntityAttributeBaseValues implements Property {
         // Valid attribute names are listed at <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html>
         // See also <@link language attribute modifiers>.
         // -->
-        PropertyParser.<EntityAttributeBaseValues, ElementTag>registerTag(ElementTag.class, "attribute_default_value", (attribute, object) -> {
+        PropertyParser.registerTag(EntityAttributeBaseValues.class, ElementTag.class, "attribute_default_value", (attribute, object) -> {
             if (!(attribute.hasParam() && attribute.getParamElement().matchesEnum(Attribute.class))) {
                 attribute.echoError("Invalid entity.attribute_default_value[...] input: must be a valid attribute name.");
                 return null;

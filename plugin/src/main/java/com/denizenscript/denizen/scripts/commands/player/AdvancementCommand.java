@@ -1,7 +1,7 @@
 package com.denizenscript.denizen.scripts.commands.player;
 
 import com.denizenscript.denizen.Denizen;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.util.Advancement;
 import com.denizenscript.denizen.objects.ItemTag;
@@ -63,6 +63,8 @@ public class AdvancementCommand extends AbstractCommand {
     // To award a pre-existing vanilla advancement, instead use <@link mechanism PlayerTag.award_advancement>
     //
     // WARNING: Failure to re-create advancements on every server start may result in loss of data - use <@link event server prestart>.
+    //
+    // If you mess with datapacks, you will also need to re-create advancements during <@link event server resources reloaded>
     //
     // @Tags
     // <PlayerTag.has_advancement[<advancement>]>

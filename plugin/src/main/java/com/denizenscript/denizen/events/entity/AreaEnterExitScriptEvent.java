@@ -3,7 +3,7 @@ package com.denizenscript.denizen.events.entity;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizen.objects.*;
 import com.denizenscript.denizen.utilities.NotedAreaTracker;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.flags.FlaggableObject;
@@ -50,11 +50,9 @@ public class AreaEnterExitScriptEvent extends BukkitScriptEvent implements Liste
     // -->
 
     public AreaEnterExitScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> enters|exits <area>");
     }
 
-    public static AreaEnterExitScriptEvent instance;
 
     public EntityTag currentEntity;
     public AreaContainmentObject area;
@@ -76,15 +74,10 @@ public class AreaEnterExitScriptEvent extends BukkitScriptEvent implements Liste
         if (!area.tryAdvancedMatcher(areaName)) {
             return false;
         }
-        if (!currentEntity.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, currentEntity)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "AreaEnterExit";
     }
 
     @Override
@@ -164,10 +157,12 @@ public class AreaEnterExitScriptEvent extends BukkitScriptEvent implements Liste
             }
             if (area.equals("cuboid") || area.equals("ellipsoid") || area.equals("polygon")) {
                 doTrackAll = true;
+                needsMatchers = true;
             }
             MatchHelper matcher = createMatcher(area);
             if (matcher instanceof AlwaysMatchHelper) {
                 doTrackAll = true;
+                needsMatchers = true;
             }
             else if (!needsMatchers && (matcher instanceof ExactMatchHelper)) {
                 exacts.add(area);
@@ -178,6 +173,7 @@ public class AreaEnterExitScriptEvent extends BukkitScriptEvent implements Liste
             matchList.add(matcher);
             if (area.startsWith("area_flagged:")) {
                 flags.add(CoreUtilities.toLowerCase(area.substring("area_flagged:".length())));
+                needsMatchers = true;
             }
         }
         exactTracked = needsMatchers ? null : exacts.toArray(new String[0]);

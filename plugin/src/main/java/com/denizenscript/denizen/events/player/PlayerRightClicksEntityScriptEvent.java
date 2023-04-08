@@ -41,13 +41,11 @@ public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implem
     //
     // -->
 
-    public static PlayerRightClicksEntityScriptEvent instance;
     PlayerInteractEntityEvent event;
     EntityTag entity;
     ItemTag item;
 
     public PlayerRightClicksEntityScriptEvent() {
-        instance = this;
         registerCouldMatcher("player right clicks <entity>");
         registerSwitches("with", "type");
     }
@@ -68,15 +66,10 @@ public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implem
         if (path.eventArgLowerAt(isAt ? 5 : 4).equals("with") && !item.tryAdvancedMatcher(path.eventArgLowerAt(isAt ? 6 : 5))) {
             return false;
         }
-        if (path.switches.containsKey("type") && !entity.tryAdvancedMatcher(path.switches.get("type"))) {
+        if (!path.tryObjectSwitch("type", entity)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerRightClicksEntity";
     }
 
     @Override

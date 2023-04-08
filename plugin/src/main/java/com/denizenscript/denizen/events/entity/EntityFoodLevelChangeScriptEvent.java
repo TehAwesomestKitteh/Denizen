@@ -44,12 +44,10 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
     // -->
 
     public EntityFoodLevelChangeScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> changes food level");
         registerSwitches("item");
     }
 
-    public static EntityFoodLevelChangeScriptEvent instance;
     public EntityTag entity;
     public ItemTag item;
     public FoodLevelChangeEvent event;
@@ -60,7 +58,7 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
         if (!entity.tryAdvancedMatcher(target)) {
             return false;
         }
-        if (path.switches.containsKey("item") && !item.tryAdvancedMatcher(path.switches.get("item"))) {
+        if (!path.tryObjectSwitch("item", item)) {
             return false;
         }
         if (!runInCheck(path, entity.getLocation())) {
@@ -70,14 +68,9 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
     }
 
     @Override
-    public String getName() {
-        return "FoodLevelChanged";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag && determinationObj.asElement().isInt()) {
-            event.setFoodLevel(determinationObj.asElement().asInt());
+        if (determinationObj instanceof ElementTag element && element.isInt()) {
+            event.setFoodLevel(element.asInt());
             return true;
         }
         return super.applyDetermination(path, determinationObj);

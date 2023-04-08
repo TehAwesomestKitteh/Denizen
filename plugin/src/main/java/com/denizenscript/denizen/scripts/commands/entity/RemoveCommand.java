@@ -1,7 +1,7 @@
 package com.denizenscript.denizen.scripts.commands.entity;
 
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.entity.DenizenEntityType;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.WorldTag;
@@ -106,11 +106,12 @@ public class RemoveCommand extends AbstractCommand {
                 else if (entity.isCitizensNPC()) {
                     entity.getDenizenNPC().getCitizen().destroy();
                 }
-                else if (entity.isSpawned()) {
-                    entity.remove();
-                }
                 else {
-                    Debug.echoError("Tried to remove already-removed entity.");
+                    if (!entity.isSpawned()) {
+                        Debug.echoError("Tried to remove already-removed entity.");
+                        // Still remove() anyway to compensate for Spigot/NMS bugs
+                    }
+                    entity.remove();
                 }
             }
             else {

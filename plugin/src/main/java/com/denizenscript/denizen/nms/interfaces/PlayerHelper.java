@@ -11,11 +11,14 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.UUID;
 
 public abstract class PlayerHelper {
 
-    public abstract void stopSound(Player player, String sound, SoundCategory category);
+    public abstract void stopSound(Player player, String sound, SoundCategory category); // TODO: remove the category param once 1.19 is the minimum version
 
     public FakeEntity sendEntitySpawn(List<PlayerTag> players, DenizenEntityType entityType, LocationTag location, ArrayList<Mechanism> mechanisms, int customId, UUID customUUID, boolean autoTrack) {
         throw new UnsupportedOperationException();
@@ -37,21 +40,15 @@ public abstract class PlayerHelper {
 
     public abstract float getMaxAttackCooldownTicks(Player player);
 
-    public abstract float getAttackCooldownPercent(Player player);
-
     public abstract void setAttackCooldown(Player player, int ticks);
 
     public abstract boolean hasChunkLoaded(Player player, Chunk chunk);
-
-    public abstract int getPing(Player player);
 
     public abstract void setTemporaryOp(Player player, boolean op);
 
     public abstract void showEndCredits(Player player);
 
     public abstract ImprovedOfflinePlayer getOfflineData(UUID uuid);
-
-    public abstract ImprovedOfflinePlayer getOfflineData(OfflinePlayer offlinePlayer);
 
     public abstract void resendDiscoveredRecipes(Player player);
 
@@ -88,10 +85,6 @@ public abstract class PlayerHelper {
         bar.setTitle(title);
     }
 
-    public void doAttack(Player attacker, Entity victim) {
-        throw new UnsupportedOperationException();
-    }
-
     public boolean getSpawnForced(Player player) {
         throw new UnsupportedOperationException();
     }
@@ -104,17 +97,21 @@ public abstract class PlayerHelper {
         throw new UnsupportedOperationException();
     }
 
-    public enum ProfileEditMode { ADD, UPDATE_DISPLAY, UPDATE_LATENCY }
+    public enum ProfileEditMode { ADD, UPDATE_DISPLAY, UPDATE_LATENCY, UPDATE_GAME_MODE, UPDATE_LISTED }
 
-    public void sendPlayerInfoAddPacket(Player player, ProfileEditMode mode, String name, String display, UUID id, String texture, String signature, int latency, GameMode gameMode) {
+    public void sendPlayerInfoAddPacket(Player player, EnumSet<ProfileEditMode> editModes, String name, String display, UUID id, String texture, String signature, int latency, GameMode gameMode, boolean listed) { // TODO: once minimum version is 1.19 or higher, rename to 'sendPlayerInfoUpdatePacket'
         throw new UnsupportedOperationException();
     }
 
-    public void sendPlayerRemovePacket(Player player, UUID id) {
+    public void sendPlayerInfoRemovePacket(Player player, UUID id) {
         throw new UnsupportedOperationException();
     }
 
     public void sendClimbableMaterials(Player player, List<Material> materials) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void refreshPlayer(Player player) {
         throw new UnsupportedOperationException();
     }
 }

@@ -39,18 +39,16 @@ public class EntityHealsScriptEvent extends BukkitScriptEvent implements Listene
     // -->
 
     public EntityHealsScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> heals (because <'cause'>)");
     }
 
-    public static EntityHealsScriptEvent instance;
     public EntityTag entity;
     public ElementTag reason;
     public EntityRegainHealthEvent event;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!entity.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, entity)) {
             return false;
         }
         if (path.eventArgLowerAt(2).equals("because") && !runGenericCheck(path.eventArgLowerAt(3), reason.toString())) {
@@ -63,14 +61,9 @@ public class EntityHealsScriptEvent extends BukkitScriptEvent implements Listene
     }
 
     @Override
-    public String getName() {
-        return "EntityHeals";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag && ((ElementTag) determinationObj).isDouble()) {
-            event.setAmount(((ElementTag) determinationObj).asDouble());
+        if (determinationObj instanceof ElementTag element && element.isDouble()) {
+            event.setAmount(element.asDouble());
             return true;
         }
         return super.applyDetermination(path, determinationObj);
@@ -85,7 +78,7 @@ public class EntityHealsScriptEvent extends BukkitScriptEvent implements Listene
     public ObjectTag getContext(String name) {
         switch (name) {
             case "entity":
-                return entity;
+                return entity.getDenizenObject();
             case "reason":
                 return reason;
             case "amount":

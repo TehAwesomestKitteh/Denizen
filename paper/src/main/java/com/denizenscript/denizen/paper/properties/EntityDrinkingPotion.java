@@ -30,13 +30,13 @@ public class EntityDrinkingPotion implements Property {
             "drinking_potion", "potion_drink_duration"
     };
 
-    private EntityDrinkingPotion(EntityTag _entity) {
+    public EntityDrinkingPotion(EntityTag _entity) {
         entity = _entity;
     }
 
     EntityTag entity;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.drinking_potion>
@@ -47,7 +47,7 @@ public class EntityDrinkingPotion implements Property {
         // @description
         // Returns the potion item a witch is drinking, or air if none.
         // -->
-        PropertyParser.<EntityDrinkingPotion, ItemTag>registerTag(ItemTag.class, "drinking_potion", (attribute, object) -> {
+        PropertyParser.registerTag(EntityDrinkingPotion.class, ItemTag.class, "drinking_potion", (attribute, object) -> {
             return new ItemTag(object.getWitch().getDrinkingPotion());
         });
 
@@ -60,7 +60,7 @@ public class EntityDrinkingPotion implements Property {
         // @description
         // Returns the duration remaining until a witch is done drinking a potion.
         // -->
-        PropertyParser.<EntityDrinkingPotion, DurationTag>registerTag(DurationTag.class, "potion_drink_duration", (attribute, object) -> {
+        PropertyParser.registerTag(EntityDrinkingPotion.class, DurationTag.class, "potion_drink_duration", (attribute, object) -> {
             return new DurationTag((long) object.getWitch().getPotionUseTimeLeft());
         });
     }

@@ -37,11 +37,9 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
     // -->
 
     public HorseJumpsScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> jumps");
     }
 
-    public static HorseJumpsScriptEvent instance;
     public EntityTag entity;
     public ElementTag color;
     public HorseJumpEvent event;
@@ -79,14 +77,9 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
     }
 
     @Override
-    public String getName() {
-        return "HorseJumps";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag && ((ElementTag) determinationObj).isFloat()) {
-            event.setPower(((ElementTag) determinationObj).asFloat());
+        if (determinationObj instanceof ElementTag element && element.isFloat()) {
+            event.setPower(element.asFloat());
             return true;
         }
         return super.applyDetermination(path, determinationObj);
@@ -108,7 +101,7 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
     @EventHandler
     public void onHorseJumps(HorseJumpEvent event) {
         entity = new EntityTag(event.getEntity());
-        color = event.getEntity() instanceof Horse ? new ElementTag(((Horse) event.getEntity()).getColor().name()) : null;
+        color = event.getEntity() instanceof Horse ? new ElementTag(((Horse) event.getEntity()).getColor()) : null;
         this.event = event;
         fire(event);
     }

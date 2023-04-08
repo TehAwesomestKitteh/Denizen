@@ -4,9 +4,10 @@ import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.abstracts.BiomeNMS;
 import com.denizenscript.denizen.nms.v1_19.ReflectionMappingsInfo;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -16,28 +17,32 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
 import org.bukkit.entity.EntityType;
 
+import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class BiomeNMSImpl extends BiomeNMS {
 
-    public Holder<Biome> biomeBase;
+    public static final MethodHandle BIOME_CLIMATESETTINGS_CONSTRUCTOR = ReflectionHelper.getConstructor(Biome.class.getDeclaredClasses()[0], boolean.class, float.class, Biome.TemperatureModifier.class, float.class);
 
+    public Holder<Biome> biomeHolder;
     public ServerLevel world;
 
     public BiomeNMSImpl(ServerLevel world, String name) {
         super(world.getWorld(), name);
         this.world = world;
-        biomeBase = world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).getHolder(ResourceKey.create(Registry.BIOME_REGISTRY, new ResourceLocation(name))).orElse(null);
+        biomeHolder = world.registryAccess().registryOrThrow(Registries.BIOME).getHolder(ResourceKey.create(Registries.BIOME, new ResourceLocation(name))).orElse(null);
     }
 
     @Override
-    public DownfallType getDownfallType() {
-        Biome.Precipitation nmsType = biomeBase.value().getPrecipitation();
+    public DownfallType getDownfallType() { // TODO: 1.19.4: This is no longer valid, downfall is based on height now
+        throw new UnsupportedOperationException();
+        /*
+        Biome.Precipitation nmsType = biomeHolder.value().getPrecipitation();
         switch (nmsType) {
             case RAIN:
                 return DownfallType.RAIN;
@@ -47,17 +52,17 @@ public class BiomeNMSImpl extends BiomeNMS {
                 return DownfallType.NONE;
             default:
                 throw new UnsupportedOperationException();
-        }
+        }*/
     }
 
     @Override
     public float getHumidity() {
-        return biomeBase.value().getDownfall();
+        return biomeHolder.value().climateSettings.downfall();
     }
 
     @Override
     public float getTemperature() {
-        return biomeBase.value().getBaseTemperature();
+        return biomeHolder.value().getBaseTemperature();
     }
 
     @Override
@@ -81,23 +86,33 @@ public class BiomeNMSImpl extends BiomeNMS {
     }
 
     public Object getClimate() {
-        return ReflectionHelper.getFieldValue(net.minecraft.world.level.biome.Biome.class, ReflectionMappingsInfo.Biome_climateSettings, biomeBase);
+        return ReflectionHelper.getFieldValue(Biome.class, ReflectionMappingsInfo.Biome_climateSettings, biomeHolder.value());
+    }
+
+    public void setClimate(boolean hasPrecipitation, float temperature, Biome.TemperatureModifier temperatureModifier, float downfall) {
+        try {
+            Object newClimate = BIOME_CLIMATESETTINGS_CONSTRUCTOR.invoke(hasPrecipitation, temperature, temperatureModifier, downfall);
+            ReflectionHelper.setFieldValue(Biome.class, ReflectionMappingsInfo.Biome_climateSettings, biomeHolder.value(), newClimate);
+        }
+        catch (Throwable ex) {
+            Debug.echoError(ex);
+        }
     }
 
     @Override
     public void setHumidity(float humidity) {
-        Object climate = getClimate();
-        ReflectionHelper.setFieldValue(climate.getClass(), ReflectionMappingsInfo.Biome_ClimateSettings_downfall, climate, humidity);
+        setClimate(biomeHolder.value().climateSettings.hasPrecipitation(), getTemperature(), getTemperatureModifier(), humidity);
     }
 
     @Override
     public void setTemperature(float temperature) {
-        Object climate = getClimate();
-        ReflectionHelper.setFieldValue(climate.getClass(), ReflectionMappingsInfo.Biome_ClimateSettings_temperature, climate, temperature);
+        setClimate(biomeHolder.value().hasPrecipitation(), temperature, getTemperatureModifier(), getHumidity());
     }
 
     @Override
-    public void setPrecipitation(DownfallType type) {
+    public void setPrecipitation(DownfallType type) { // TODO: 1.19.4: This is no longer valid, downfall is based on height now
+        throw new UnsupportedOperationException();
+        /*
         Biome.Precipitation nmsType;
         switch (type) {
             case NONE:
@@ -112,12 +127,11 @@ public class BiomeNMSImpl extends BiomeNMS {
             default:
                 throw new UnsupportedOperationException();
         }
-        Object climate = getClimate();
-        ReflectionHelper.setFieldValue(climate.getClass(), ReflectionMappingsInfo.Biome_ClimateSettings_precipitation, climate, nmsType);
+        setClimate(nmsType, getTemperature(), getTemperatureModifier(), getHumidity());*/
     }
 
     private List<EntityType> getSpawnableEntities(MobCategory creatureType) {
-        MobSpawnSettings mobs = biomeBase.value().getMobSettings();
+        MobSpawnSettings mobs = biomeHolder.value().getMobSettings();
         WeightedRandomList<MobSpawnSettings.SpawnerData> typeSettingList = mobs.getMobs(creatureType);
         List<EntityType> entityTypes = new ArrayList<>();
         if (typeSettingList == null) {
@@ -150,9 +164,14 @@ public class BiomeNMSImpl extends BiomeNMS {
         if (world.hasChunkAt(pos)) {
             LevelChunk chunk = world.getChunkAt(pos);
             if (chunk != null) {
-                chunk.setBiome(block.getX() >> 2, block.getY() >> 2, block.getZ() >> 2, biomeBase);
+                chunk.setBiome(block.getX() >> 2, block.getY() >> 2, block.getZ() >> 2, biomeHolder);
                 chunk.setUnsaved(true);
             }
         }
+    }
+
+    public Biome.TemperatureModifier getTemperatureModifier() {
+        Object climate = getClimate();
+        return ReflectionHelper.getFieldValue(climate.getClass(), ReflectionMappingsInfo.BiomeClimateSettings_temperatureModifier, climate);
     }
 }

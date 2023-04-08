@@ -81,7 +81,7 @@ public class DenizenNetworkManagerImpl extends Connection {
             return copier;
         }
         catch (Throwable ex) {
-            com.denizenscript.denizen.utilities.debugging.Debug.echoError(ex);
+            Debug.echoError(ex);
             return null;
         }
     }
@@ -273,16 +273,16 @@ public class DenizenNetworkManagerImpl extends Connection {
             PlayerReceivesActionbarScriptEvent event = PlayerReceivesActionbarScriptEvent.instance;
             Component baseComponent = actionbarPacket.getText();
             event.reset();
-            event.message = new ElementTag(FormattedTextHelper.stringify(Handler.componentToSpigot(baseComponent), ChatColor.WHITE));
+            event.message = new ElementTag(FormattedTextHelper.stringify(Handler.componentToSpigot(baseComponent)));
             event.rawJson = new ElementTag(Component.Serializer.toJson(baseComponent));
             event.system = new ElementTag(false);
             event.player = PlayerTag.mirrorBukkitPlayer(player.getBukkitEntity());
-            event = (PlayerReceivesActionbarScriptEvent) event.fire();
+            event = (PlayerReceivesActionbarScriptEvent) event.triggerNow();
             if (event.cancelled) {
                 return true;
             }
             if (event.modified) {
-                Component component = Handler.componentToNMS(ComponentSerializer.parse(event.rawJson.asString()));
+                Component component = Handler.componentToNMS(event.altMessageDetermination);
                 ClientboundSetActionBarTextPacket newPacket = new ClientboundSetActionBarTextPacket(component);
                 oldManager.send(newPacket, genericfuturelistener);
                 return true;
@@ -944,7 +944,14 @@ public class DenizenNetworkManagerImpl extends Connection {
         if (packet instanceof ClientboundChatPacket && DenizenPacketHandler.instance.shouldInterceptChatPacket()) {
             PacketOutChatImpl packetHelper = new PacketOutChatImpl((ClientboundChatPacket) packet);
             PlayerReceivesMessageScriptEvent result = DenizenPacketHandler.instance.sendPacket(player.getBukkitEntity(), packetHelper);
-            return result != null && result.cancelled;
+            if (result != null) {
+                if (result.cancelled) {
+                    return true;
+                }
+                if (result.modified) {
+                    packetHelper.setRawJson(ComponentSerializer.toString(result.altMessageDetermination));
+                }
+            }
         }
         else if (packet instanceof ClientboundSetEntityDataPacket && DenizenPacketHandler.instance.shouldInterceptMetadata()) {
             return DenizenPacketHandler.instance.sendPacket(player.getBukkitEntity(), new PacketOutEntityMetadataImpl((ClientboundSetEntityDataPacket) packet));

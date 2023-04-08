@@ -2,7 +2,7 @@ package com.denizenscript.denizen.events.entity;
 
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.LocationTag;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizen.events.BukkitScriptEvent;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -19,10 +19,7 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // entity explodes
     // <entity> explodes
-    //
-    // @Regex ^on [^\s]+ explodes$
     //
     // @Group Entity
     //
@@ -45,24 +42,12 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public EntityExplodesScriptEvent() {
-        instance = this;
+        registerCouldMatcher("<entity> explodes");
     }
 
-    public static EntityExplodesScriptEvent instance;
     public EntityTag entity;
     public LocationTag location;
     public EntityExplodeEvent event;
-
-    @Override
-    public boolean couldMatch(ScriptPath path) {
-        if (!path.eventArgLowerAt(1).equals("explodes")) {
-            return false;
-        }
-        if (!couldMatchEntity(path.eventArgLowerAt(0))) {
-            return false;
-        }
-        return true;
-    }
 
     @Override
     public boolean matches(ScriptPath path) {
@@ -74,11 +59,6 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "EntityExplodes";
     }
 
     @Override

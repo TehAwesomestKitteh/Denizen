@@ -29,7 +29,7 @@ public class EntityBeamTarget implements Property {
             "beam_target"
     };
 
-    private EntityBeamTarget(EntityTag entity) {
+    public EntityBeamTarget(EntityTag entity) {
         dentity = entity;
     }
 
@@ -50,7 +50,7 @@ public class EntityBeamTarget implements Property {
         return (EnderCrystal) dentity.getBukkitEntity();
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.beam_target>
@@ -60,7 +60,7 @@ public class EntityBeamTarget implements Property {
         // @description
         // Returns the target location of the ender crystal's beam, if any.
         // -->
-        PropertyParser.<EntityBeamTarget, LocationTag>registerTag(LocationTag.class, "beam_target", (attribute, object) -> {
+        PropertyParser.registerTag(EntityBeamTarget.class, LocationTag.class, "beam_target", (attribute, object) -> {
             Location beamTarget = object.getCrystal().getBeamTarget();
             if (beamTarget != null) {
                 return new LocationTag(beamTarget);

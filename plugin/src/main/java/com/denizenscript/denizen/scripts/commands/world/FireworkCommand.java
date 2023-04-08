@@ -1,10 +1,11 @@
 package com.denizenscript.denizen.scripts.commands.world;
 
 import com.denizenscript.denizen.nms.NMSHandler;
+import com.denizenscript.denizen.objects.properties.bukkit.BukkitColorExtensions;
 import com.denizenscript.denizen.utilities.Conversion;
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
-import com.denizenscript.denizen.objects.ColorTag;
+import com.denizenscript.denizencore.objects.core.ColorTag;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
@@ -98,7 +99,7 @@ public class FireworkCommand extends AbstractCommand {
             }
             else if (!scriptEntry.hasObject("type")
                     && arg.matches("random")) {
-                scriptEntry.addObject("type", new ElementTag(FireworkEffect.Type.values()[CoreUtilities.getRandom().nextInt(FireworkEffect.Type.values().length)].name()));
+                scriptEntry.addObject("type", new ElementTag(FireworkEffect.Type.values()[CoreUtilities.getRandom().nextInt(FireworkEffect.Type.values().length)]));
             }
             else if (!scriptEntry.hasObject("type")
                     && arg.matchesEnum(FireworkEffect.Type.class)) {
@@ -121,7 +122,7 @@ public class FireworkCommand extends AbstractCommand {
         ElementTag type = scriptEntry.getElement("type");
         List<ColorTag> primary = scriptEntry.argForPrefixList("primary", ColorTag.class, true);
         if (primary == null) {
-            primary = Collections.singletonList(new ColorTag(Color.YELLOW));
+            primary = Collections.singletonList(BukkitColorExtensions.fromColor(Color.YELLOW));
         }
         List<ColorTag> fade = scriptEntry.argForPrefixList("fade", ColorTag.class, true);
         boolean flicker = scriptEntry.argAsBoolean("flicker");
@@ -151,6 +152,6 @@ public class FireworkCommand extends AbstractCommand {
         if (life != null) {
             NMSHandler.entityHelper.setFireworkLifetime(firework, life.getTicksAsInt());
         }
-        scriptEntry.addObject("launched_firework", new EntityTag(firework));
+        scriptEntry.saveObject("launched_firework", new EntityTag(firework));
     }
 }

@@ -34,18 +34,16 @@ public class FurnaceBurnsItemScriptEvent extends BukkitScriptEvent implements Li
     // -->
 
     public FurnaceBurnsItemScriptEvent() {
-        instance = this;
         registerCouldMatcher("furnace burns <item>");
     }
 
-    public static FurnaceBurnsItemScriptEvent instance;
     public ItemTag item;
     public LocationTag location;
     public FurnaceBurnEvent event;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!item.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, item)) {
             return false;
         }
         if (!runInCheck(path, location)) {
@@ -55,14 +53,9 @@ public class FurnaceBurnsItemScriptEvent extends BukkitScriptEvent implements Li
     }
 
     @Override
-    public String getName() {
-        return "FurnaceBurns";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag && ((ElementTag) determinationObj).isInt()) {
-            event.setBurnTime(((ElementTag) determinationObj).asInt());
+        if (determinationObj instanceof ElementTag element && element.isInt()) {
+            event.setBurnTime(element.asInt());
             return true;
         }
         else if (determinationObj.canBeType(DurationTag.class)) {

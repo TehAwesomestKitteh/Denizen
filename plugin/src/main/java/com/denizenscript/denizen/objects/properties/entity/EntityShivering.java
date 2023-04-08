@@ -28,13 +28,13 @@ public class EntityShivering implements Property {
             "shivering"
     };
 
-    private EntityShivering(EntityTag _entity) {
+    public EntityShivering(EntityTag _entity) {
         entity = _entity;
     }
 
     EntityTag entity;
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.shivering>
@@ -44,7 +44,7 @@ public class EntityShivering implements Property {
         // @description
         // Returns whether the strider is shivering.
         // -->
-        PropertyParser.<EntityShivering, ElementTag>registerTag(ElementTag.class, "shivering", (attribute, object) -> {
+        PropertyParser.registerTag(EntityShivering.class, ElementTag.class, "shivering", (attribute, object) -> {
             return new ElementTag(object.getStrider().isShivering());
         });
     }

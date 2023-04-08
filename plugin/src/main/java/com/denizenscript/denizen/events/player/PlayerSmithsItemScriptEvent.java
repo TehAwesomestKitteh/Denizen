@@ -40,10 +40,8 @@ public class PlayerSmithsItemScriptEvent extends BukkitScriptEvent implements Li
     // -->
 
     public PlayerSmithsItemScriptEvent() {
-        instance = this;
     }
 
-    public static PlayerSmithsItemScriptEvent instance;
     public SmithItemEvent event;
     public ItemTag result;
     public PlayerTag player;
@@ -61,15 +59,10 @@ public class PlayerSmithsItemScriptEvent extends BukkitScriptEvent implements Li
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!result.tryAdvancedMatcher(path.eventArgLowerAt(2))) {
+        if (!path.tryArgObject(2, result)) {
             return false;
         }
         return super.matches(path);
-    }
-
-    @Override
-    public String getName() {
-        return "PlayerSmithsItem";
     }
 
     @Override
@@ -108,7 +101,6 @@ public class PlayerSmithsItemScriptEvent extends BukkitScriptEvent implements Li
         this.event = event;
         result = new ItemTag(event.getInventory().getResult());
         this.player = EntityTag.getPlayerFrom(humanEntity);
-        this.cancelled = false;
         fire(event);
     }
 }

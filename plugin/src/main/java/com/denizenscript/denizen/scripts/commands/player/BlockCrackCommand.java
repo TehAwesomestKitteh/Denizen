@@ -1,7 +1,7 @@
 package com.denizenscript.denizen.scripts.commands.player;
 
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizen.objects.PlayerTag;
@@ -100,7 +100,6 @@ public class BlockCrackCommand extends AbstractCommand {
 
     @Override
     public void execute(ScriptEntry scriptEntry) {
-
         List<PlayerTag> players = (List<PlayerTag>) scriptEntry.getObject("players");
         ElementTag progress = scriptEntry.getElement("progress");
         LocationTag location = scriptEntry.getObjectTag("location");
@@ -111,7 +110,6 @@ public class BlockCrackCommand extends AbstractCommand {
         Location loc = location.getBlock().getLocation();
         if (!progressTracker.containsKey(loc)) {
             progressTracker.put(loc, new HashMap<>());
-            lastBase += 10;
         }
         Map<UUID, IntHolder> uuidInt = progressTracker.get(loc);
         boolean stackVal = stack.asBoolean();
@@ -123,6 +121,7 @@ public class BlockCrackCommand extends AbstractCommand {
             Player playerEnt = player.getPlayerEntity();
             UUID uuid = playerEnt.getUniqueId();
             if (!uuidInt.containsKey(uuid)) {
+                lastBase += 10;
                 IntHolder newIntHolder = new IntHolder();
                 newIntHolder.theInt = lastBase;
                 newIntHolder.base = lastBase;

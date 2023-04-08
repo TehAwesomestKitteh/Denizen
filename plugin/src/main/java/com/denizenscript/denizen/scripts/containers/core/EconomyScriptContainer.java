@@ -2,10 +2,11 @@ package com.denizenscript.denizen.scripts.containers.core;
 
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
+import com.denizenscript.denizen.utilities.Settings;
 import com.denizenscript.denizen.utilities.implementation.BukkitScriptEntryData;
 import com.denizenscript.denizen.objects.PlayerTag;
 import com.denizenscript.denizen.tags.BukkitTagContext;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.core.ElementTag;
 import com.denizenscript.denizencore.objects.core.ScriptTag;
 import com.denizenscript.denizencore.scripts.ScriptEntry;
@@ -24,6 +25,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 public class EconomyScriptContainer extends ScriptContainer {
 
@@ -44,6 +46,8 @@ public class EconomyScriptContainer extends ScriptContainer {
     // Note that in most cases, you do not want to have multiple economy providers, as only one will actually be in use.
     //
     // ALL SCRIPT KEYS ARE REQUIRED.
+    //
+    // Economy scripts can be automatically disabled by adding "enabled: false" as a root key (supports any load-time-parseable tags).
     //
     // <code>
     // # The script name will be shown to the economy provider as the name of the economy system.
@@ -109,30 +113,60 @@ public class EconomyScriptContainer extends ScriptContainer {
             return autoTag(value, player, defProvider);
         }
 
-        public void validateThread() {
+        public boolean validateThread() {
             if (!Bukkit.isPrimaryThread()) {
+                if (Settings.allowAsyncPassThrough) {
+                    return false;
+                }
+                Debug.echoError("Warning: economy access from wrong thread, blocked. Inform the developer of whatever plugin tried to read eco data that it is forbidden to do so async."
+                        + " You can use config option 'Scripts.Economy.Pass async to main thread' to enable dangerous access.");
                 try {
                     throw new RuntimeException("Stack reference");
                 }
                 catch (RuntimeException ex) {
-                    Debug.echoError("Warning: economy access from wrong thread, errors will result");
                     Debug.echoError(ex);
                 }
+                return false;
             }
+            return true;
         }
 
         public String autoTag(String value, OfflinePlayer player, DefinitionProvider defProvider) {
             if (value == null) {
                 return null;
             }
-            validateThread();
+            if (!validateThread()) {
+                if (!Settings.allowAsyncPassThrough) {
+                    return null;
+                }
+                try {
+                    Future<String> future = Bukkit.getScheduler().callSyncMethod(Denizen.instance, () -> autoTag(value, player, defProvider));
+                    return future.get();
+                }
+                catch (Throwable ex) {
+                    Debug.echoError(ex);
+                    return null;
+                }
+            }
             BukkitTagContext context = new BukkitTagContext(player == null ? null : new PlayerTag(player), null, new ScriptTag(backingScript));
             context.definitionProvider = defProvider;
             return TagManager.tag(value, context);
         }
 
         public String runSubScript(String pathName, OfflinePlayer player, double amount) {
-            validateThread();
+            if (!validateThread()) {
+                if (!Settings.allowAsyncPassThrough) {
+                    return null;
+                }
+                try {
+                    Future<String> future = Bukkit.getScheduler().callSyncMethod(Denizen.instance, () -> runSubScript(pathName, player, amount));
+                    return future.get();
+                }
+                catch (Throwable ex) {
+                    Debug.echoError(ex);
+                    return null;
+                }
+            }
             List<ScriptEntry> entries = backingScript.getEntries(new BukkitScriptEntryData(new PlayerTag(player), null), pathName);
             InstantQueue queue = new InstantQueue(backingScript.getName());
             queue.addEntries(entries);
@@ -389,6 +423,8 @@ public class EconomyScriptContainer extends ScriptContainer {
 
     public EconomyScriptContainer(YamlConfiguration configurationSection, String scriptContainerName) {
         super(configurationSection, scriptContainerName);
-        providersRegistered.add(register());
+        if (shouldEnable()) {
+            providersRegistered.add(register());
+        }
     }
 }

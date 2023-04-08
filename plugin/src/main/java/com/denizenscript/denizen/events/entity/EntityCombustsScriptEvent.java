@@ -45,17 +45,15 @@ public class EntityCombustsScriptEvent extends BukkitScriptEvent implements List
     // -->
 
     public EntityCombustsScriptEvent() {
-        instance = this;
         registerCouldMatcher("<entity> combusts");
     }
 
-    public static EntityCombustsScriptEvent instance;
     public EntityTag entity;
     public EntityCombustEvent event;
 
     @Override
     public boolean matches(ScriptPath path) {
-        if (!entity.tryAdvancedMatcher(path.eventArgLowerAt(0))) {
+        if (!path.tryArgObject(0, entity)) {
             return false;
         }
         if (!runInCheck(path, entity.getLocation())) {
@@ -65,14 +63,9 @@ public class EntityCombustsScriptEvent extends BukkitScriptEvent implements List
     }
 
     @Override
-    public String getName() {
-        return "EntityCombusts";
-    }
-
-    @Override
     public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag && ((ElementTag) determinationObj).isInt()) {
-            event.setDuration(((ElementTag) determinationObj).asInt());
+        if (determinationObj instanceof ElementTag element && element.isInt()) {
+            event.setDuration(element.asInt());
             return true;
         }
         else if (DurationTag.matches(determinationObj.toString())) {

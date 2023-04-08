@@ -14,6 +14,7 @@ import com.denizenscript.denizencore.objects.core.ScriptTag;
 import com.denizenscript.denizencore.tags.TagManager;
 import com.denizenscript.denizen.utilities.BukkitImplDeprecations;
 import com.denizenscript.denizencore.utilities.SimpleDefinitionProvider;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.ChatColor;
@@ -54,7 +55,6 @@ public class DenizenCommand extends Command {
         }
         Map<String, ObjectTag> context = new HashMap<>();
         PlayerTag player = null;
-        NPCTag npc = null;
         if (commandSender instanceof Player) {
             Player pl = (Player) commandSender;
             if (!EntityTag.isNPC(pl)) {
@@ -65,7 +65,13 @@ public class DenizenCommand extends Command {
         else {
             context.put("server", new ElementTag(true));
         }
-        return script.runAllowedHelpProcedure(player, npc, context);
+        Debug.push3ErrorContexts(script, "while reading Allowed Help procedure", player);
+        try {
+            return script.runAllowedHelpProcedure(player, null, context);
+        }
+        finally {
+            Debug.popErrorContext(3);
+        }
     }
 
     @Override
@@ -104,8 +110,14 @@ public class DenizenCommand extends Command {
             BukkitTagContext context = new BukkitTagContext(player, npc, null, false, new ScriptTag(script));
             context.definitionProvider = new SimpleDefinitionProvider();
             context.definitionProvider.addDefinition("permission", new ElementTag(getPermission()));
-            for (String line : TagManager.tag(permissionMessage, context).split("\n")) {
-                target.sendMessage(line);
+            Debug.push3ErrorContexts(script, "while reading Permission Message", player);
+            try {
+                for (String line : TagManager.tag(permissionMessage, context).split("\n")) {
+                    target.sendMessage(line);
+                }
+            }
+            finally {
+                Debug.popErrorContext(3);
             }
         }
 
@@ -126,7 +138,7 @@ public class DenizenCommand extends Command {
             }
             raw_args = rawArgsBuilder.substring(0, rawArgsBuilder.length() - 1);
         }
-        List<String> args = Arrays.asList(ArgumentHelper.buildArgs(raw_args));
+        List<String> args = Arrays.asList(ArgumentHelper.buildArgs(raw_args, false));
         context.put("args", new ListTag(args, true));
         context.put("raw_args", new ElementTag(raw_args, true));
         context.put("alias", new ElementTag(commandLabel, true));
@@ -188,7 +200,7 @@ public class DenizenCommand extends Command {
             }
             raw_args = rawArgsBuilder.substring(0, rawArgsBuilder.length() - 1);
         }
-        List<String> args = Arrays.asList(ArgumentHelper.buildArgs(raw_args));
+        List<String> args = Arrays.asList(ArgumentHelper.buildArgs(raw_args, false));
         context.put("args", new ListTag(args, true));
         context.put("raw_args", new ElementTag(raw_args, true));
         context.put("alias", new ElementTag(alias, true));
@@ -213,6 +225,12 @@ public class DenizenCommand extends Command {
                 npc = new NPCTag(citizen);
             }
         }
-        return script.runTabCompleteProcedure(player, npc, context, arguments);
+        Debug.push3ErrorContexts(script, "while reading tab completions", player);
+        try {
+            return script.runTabCompleteProcedure(player, npc, context, arguments);
+        }
+        finally {
+            Debug.popErrorContext(3);
+        }
     }
 }

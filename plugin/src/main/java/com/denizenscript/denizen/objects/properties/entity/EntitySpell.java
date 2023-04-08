@@ -31,7 +31,7 @@ public class EntitySpell implements Property {
             "spell"
     };
 
-    private EntitySpell(EntityTag entity) {
+    public EntitySpell(EntityTag entity) {
         dentity = entity;
     }
 
@@ -64,7 +64,7 @@ public class EntitySpell implements Property {
         // Can be: <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/entity/Spellcaster.Spell.html>
         // -->
         if (attribute.startsWith("spell")) {
-            return new ElementTag(((Spellcaster) dentity.getBukkitEntity()).getSpell().name())
+            return new ElementTag(((Spellcaster) dentity.getBukkitEntity()).getSpell())
                     .getObjectAttribute(attribute.fulfill(1));
         }
 

@@ -2,10 +2,13 @@ package com.denizenscript.denizen.nms.v1_19.helpers;
 
 import com.denizenscript.denizen.Denizen;
 import com.denizenscript.denizen.nms.NMSHandler;
+import com.denizenscript.denizen.nms.abstracts.ImprovedOfflinePlayer;
 import com.denizenscript.denizen.nms.enums.CustomEntityType;
+import com.denizenscript.denizen.nms.interfaces.PlayerHelper;
 import com.denizenscript.denizen.nms.v1_19.Handler;
 import com.denizenscript.denizen.nms.v1_19.ReflectionMappingsInfo;
 import com.denizenscript.denizen.nms.v1_19.impl.ImprovedOfflinePlayerImpl;
+import com.denizenscript.denizen.nms.v1_19.impl.ProfileEditorImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.entities.CraftFakePlayerImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.entities.EntityItemProjectileImpl;
 import com.denizenscript.denizen.nms.v1_19.impl.network.handlers.AbstractListenerPlayInImpl;
@@ -18,25 +21,23 @@ import com.denizenscript.denizen.utilities.FormattedTextHelper;
 import com.denizenscript.denizen.utilities.entity.DenizenEntityType;
 import com.denizenscript.denizen.utilities.entity.FakeEntity;
 import com.denizenscript.denizencore.objects.Mechanism;
-import com.denizenscript.denizencore.utilities.CoreUtilities;
-import com.mojang.authlib.GameProfile;
-import com.denizenscript.denizen.nms.abstracts.ImprovedOfflinePlayer;
-import com.denizenscript.denizen.nms.interfaces.PlayerHelper;
 import com.denizenscript.denizencore.utilities.ReflectionHelper;
 import com.denizenscript.denizencore.utilities.debugging.Debug;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.md_5.bungee.api.ChatColor;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerEntity;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.players.ServerOpList;
 import net.minecraft.server.players.ServerOpListEntry;
@@ -44,18 +45,22 @@ import net.minecraft.stats.ServerRecipeBook;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagNetworkSerialization;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemCooldowns;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.phys.AABB;
 import org.bukkit.*;
 import org.bukkit.boss.BossBar;
-import org.bukkit.craftbukkit.v1_19_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_19_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R1.block.data.CraftBlockData;
-import org.bukkit.craftbukkit.v1_19_R1.boss.CraftBossBar;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_19_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_19_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R3.boss.CraftBossBar;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R3.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_19_R3.util.CraftMagicNumbers;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -88,9 +93,7 @@ public class PlayerHelperImpl extends PlayerHelper {
 
     @Override
     public void stopSound(Player player, String sound, SoundCategory category) {
-        ResourceLocation soundKey = sound == null ? null : new ResourceLocation(sound);
-        net.minecraft.sounds.SoundSource nmsCategory = category == null ? null : net.minecraft.sounds.SoundSource.valueOf(category.name());
-        ((CraftPlayer) player).getHandle().connection.send(new ClientboundStopSoundPacket(soundKey, nmsCategory));
+        ((CraftPlayer) player).getHandle().connection.send(new ClientboundStopSoundPacket(sound == null ? null : new ResourceLocation(sound), null));
     }
 
     @Override
@@ -119,7 +122,7 @@ public class PlayerHelperImpl extends PlayerHelper {
         net.minecraft.world.entity.Entity nmsEntity;
         if (entityType.isCustom()) {
             if (entityType.customEntityType == CustomEntityType.ITEM_PROJECTILE) {
-                org.bukkit.inventory.ItemStack itemStack = new ItemStack(Material.STONE);
+                ItemStack itemStack = new ItemStack(Material.STONE);
                 for (Mechanism mechanism : mechanisms) {
                     if (mechanism.matches("item") && mechanism.requireObject(ItemTag.class)) {
                         itemStack = mechanism.valueAsType(ItemTag.class).getItemStack();
@@ -279,11 +282,6 @@ public class PlayerHelperImpl extends PlayerHelper {
     }
 
     @Override
-    public float getAttackCooldownPercent(Player player) {
-        return ((CraftPlayer) player).getHandle().getAttackStrengthScale(0.5f);
-    }
-
-    @Override
     public void setAttackCooldown(Player player, int ticks) {
         try {
             ATTACK_COOLDOWN_TICKS.setInt(((CraftPlayer) player).getHandle(), ticks);
@@ -299,11 +297,6 @@ public class PlayerHelperImpl extends PlayerHelper {
         return ((CraftWorld) chunk.getWorld()).getHandle().getChunkSource().chunkMap
                 .getPlayers(new ChunkPos(chunk.getX(), chunk.getZ()), false).stream()
                 .anyMatch(entityPlayer -> entityPlayer.getUUID().equals(player.getUniqueId()));
-    }
-
-    @Override
-    public int getPing(Player player) {
-        return ((CraftPlayer) player).getHandle().latency;
     }
 
     @Override
@@ -333,11 +326,6 @@ public class PlayerHelperImpl extends PlayerHelper {
     }
 
     @Override
-    public ImprovedOfflinePlayer getOfflineData(OfflinePlayer offlinePlayer) {
-        return new ImprovedOfflinePlayerImpl(offlinePlayer.getUniqueId());
-    }
-
-    @Override
     public void resendRecipeDetails(Player player) {
         Collection<Recipe<?>> recipes = ((CraftServer) Bukkit.getServer()).getServer().getRecipeManager().getRecipes();
         ClientboundUpdateRecipesPacket updatePacket = new ClientboundUpdateRecipesPacket(recipes);
@@ -364,7 +352,7 @@ public class PlayerHelperImpl extends PlayerHelper {
 
     @Override
     public String getPlayerBrand(Player player) {
-        return ((DenizenNetworkManagerImpl) ((CraftPlayer) player).getHandle().connection.connection).packetListener.brand;
+        return DenizenNetworkManagerImpl.getNetworkManager(player).packetListener.brand;
     }
 
     @Override
@@ -381,11 +369,6 @@ public class PlayerHelperImpl extends PlayerHelper {
     public void setBossBarTitle(BossBar bar, String title) {
         ((CraftBossBar) bar).getHandle().name = Handler.componentToNMS(FormattedTextHelper.parse(title, ChatColor.WHITE));
         ((CraftBossBar) bar).getHandle().broadcast(ClientboundBossEventPacket::createUpdateNamePacket);
-    }
-
-    @Override
-    public void doAttack(Player attacker, Entity victim) {
-        ((CraftPlayer) attacker).getHandle().attack(((CraftEntity) victim).getHandle());
     }
 
     @Override
@@ -410,36 +393,75 @@ public class PlayerHelperImpl extends PlayerHelper {
     }
 
     @Override
-    public void sendPlayerInfoAddPacket(Player player, ProfileEditMode mode, String name, String display, UUID id, String texture, String signature, int latency, GameMode gameMode) {
-        ClientboundPlayerInfoPacket.Action action = mode == ProfileEditMode.ADD ? ClientboundPlayerInfoPacket.Action.ADD_PLAYER :
-                (mode == ProfileEditMode.UPDATE_DISPLAY ? ClientboundPlayerInfoPacket.Action.UPDATE_DISPLAY_NAME : ClientboundPlayerInfoPacket.Action.UPDATE_LATENCY);
-        ClientboundPlayerInfoPacket packet = new ClientboundPlayerInfoPacket(action);
+    public void sendPlayerInfoAddPacket(Player player, EnumSet<ProfileEditMode> editModes, String name, String display, UUID id, String texture, String signature, int latency, GameMode gameMode, boolean listed) {
+        EnumSet<ClientboundPlayerInfoUpdatePacket.Action> actions = EnumSet.noneOf(ClientboundPlayerInfoUpdatePacket.Action.class);
+        for (ProfileEditMode editMode : editModes) {
+            actions.add(switch (editMode) {
+                case ADD -> ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER;
+                case UPDATE_DISPLAY -> ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME;
+                case UPDATE_LATENCY -> ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY;
+                case UPDATE_GAME_MODE -> ClientboundPlayerInfoUpdatePacket.Action.UPDATE_GAME_MODE;
+                case UPDATE_LISTED -> ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED;
+            });
+        }
         GameProfile profile = new GameProfile(id, name);
         if (texture != null) {
             profile.getProperties().put("textures", new Property("textures", texture, signature));
         }
-        packet.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(profile, latency, GameType.byName(CoreUtilities.toLowerCase(gameMode.name())), display == null ? null : Handler.componentToNMS(FormattedTextHelper.parse(display, ChatColor.WHITE)), null));
-        PacketHelperImpl.send(player, packet);
+        ClientboundPlayerInfoUpdatePacket.Entry entry = new ClientboundPlayerInfoUpdatePacket.Entry(id, profile, listed, latency, gameMode == null ? null : GameType.byId(gameMode.getValue()), display == null ? null : Handler.componentToNMS(FormattedTextHelper.parse(display, ChatColor.WHITE)), null);
+        PacketHelperImpl.send(player, ProfileEditorImpl.createInfoPacket(actions, List.of(entry)));
     }
 
     @Override
-    public void sendPlayerRemovePacket(Player player, UUID id) {
-        ClientboundPlayerInfoPacket packet = new ClientboundPlayerInfoPacket(ClientboundPlayerInfoPacket.Action.REMOVE_PLAYER);
-        GameProfile profile = new GameProfile(id, "name");
-        packet.getEntries().add(new ClientboundPlayerInfoPacket.PlayerUpdate(profile, 0, null, null, null));
-        PacketHelperImpl.send(player, packet);
+    public void sendPlayerInfoRemovePacket(Player player, UUID id) {
+        PacketHelperImpl.send(player, new ClientboundPlayerInfoRemovePacket(List.of(id)));
     }
 
     @Override
     public void sendClimbableMaterials(Player player, List<Material> materials) {
-        Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> packetInput = TagNetworkSerialization.serializeTagsToNetwork(((CraftServer) Bukkit.getServer()).getServer().registryAccess());
-        TagNetworkSerialization.NetworkPayload payload = packetInput.get(Registry.BLOCK_REGISTRY);
-        Map<ResourceLocation, IntList> tags = ReflectionHelper.getFieldValue(TagNetworkSerialization.NetworkPayload.class, ReflectionMappingsInfo.TagNetworkSerialization_NetworkPayload_tags, payload);
+        Map<ResourceKey<? extends Registry<?>>, TagNetworkSerialization.NetworkPayload> packetInput = TagNetworkSerialization.serializeTagsToNetwork(((CraftServer) Bukkit.getServer()).getServer().registries());
+        Map<ResourceLocation, IntList> tags = ReflectionHelper.getFieldValue(TagNetworkSerialization.NetworkPayload.class, ReflectionMappingsInfo.TagNetworkSerializationNetworkPayload_tags, packetInput.get(BuiltInRegistries.BLOCK.key()));
         IntList intList = tags.get(BlockTags.CLIMBABLE.location());
         intList.clear();
         for (Material material : materials) {
-            intList.add(Registry.BLOCK.getId(((CraftBlockData) material.createBlockData()).getState().getBlock()));
+            intList.add(BuiltInRegistries.BLOCK.getId(CraftMagicNumbers.getBlock(material)));
         }
         PacketHelperImpl.send(player, new ClientboundUpdateTagsPacket(packetInput));
+    }
+
+    @Override
+    public void refreshPlayer(Player player) {
+        ServerPlayer nmsPlayer = ((CraftPlayer) player).getHandle();
+        ServerLevel nmsWorld = (ServerLevel) nmsPlayer.level;
+        nmsPlayer.connection.send(new ClientboundRespawnPacket(
+                nmsWorld.dimensionTypeId(),
+                nmsWorld.dimension(),
+                BiomeManager.obfuscateSeed(nmsWorld.getSeed()),
+                nmsPlayer.gameMode.getGameModeForPlayer(),
+                nmsPlayer.gameMode.getPreviousGameModeForPlayer(),
+                nmsWorld.isDebug(),
+                nmsWorld.isFlat(),
+                ClientboundRespawnPacket.KEEP_ALL_DATA,
+                nmsPlayer.getLastDeathLocation()));
+        nmsPlayer.connection.teleport(player.getLocation());
+        if (nmsPlayer.isPassenger()) {
+           nmsPlayer.connection.send(new ClientboundSetPassengersPacket(nmsPlayer.getVehicle()));
+        }
+        if (nmsPlayer.isVehicle()) {
+            nmsPlayer.connection.send(new ClientboundSetPassengersPacket(nmsPlayer));
+        }
+        AABB boundingBox = new AABB(nmsPlayer.position(), nmsPlayer.position()).inflate(10);
+        for (Mob nmsMob : nmsWorld.getEntitiesOfClass(Mob.class, boundingBox, nmsMob -> nmsPlayer.equals(nmsMob.getLeashHolder()))) {
+            nmsPlayer.connection.send(new ClientboundSetEntityLinkPacket(nmsMob, nmsPlayer));
+        }
+        if (!nmsPlayer.getCooldowns().cooldowns.isEmpty()) {
+            int tickCount = nmsPlayer.getCooldowns().tickCount;
+            for (Map.Entry<Item, ItemCooldowns.CooldownInstance> entry : nmsPlayer.getCooldowns().cooldowns.entrySet()) {
+                nmsPlayer.connection.send(new ClientboundCooldownPacket(entry.getKey(), entry.getValue().endTime - tickCount));
+            }
+        }
+        nmsPlayer.onUpdateAbilities();
+        nmsPlayer.server.getPlayerList().sendAllPlayerInfo(nmsPlayer);
+        nmsPlayer.server.getPlayerList().sendPlayerPermissionLevel(nmsPlayer);
     }
 }

@@ -1,14 +1,14 @@
 package com.denizenscript.denizen.objects.properties.entity;
 
 import com.denizenscript.denizen.nms.NMSHandler;
-import com.denizenscript.denizen.nms.util.BoundingBox;
 import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizencore.objects.Mechanism;
-import com.denizenscript.denizencore.objects.core.ListTag;
 import com.denizenscript.denizencore.objects.ObjectTag;
+import com.denizenscript.denizencore.objects.core.ListTag;
 import com.denizenscript.denizencore.objects.properties.Property;
 import com.denizenscript.denizencore.objects.properties.PropertyParser;
+import org.bukkit.util.BoundingBox;
 
 import java.util.HashSet;
 import java.util.List;
@@ -34,23 +34,23 @@ public class EntityBoundingBox implements Property {
             "bounding_box"
     };
 
-    private static Set<UUID> modifiedBoxes = new HashSet<>();
+    public static Set<UUID> modifiedBoxes = new HashSet<>();
 
     public static void remove(UUID uuid) {
         modifiedBoxes.remove(uuid);
     }
 
-    private EntityBoundingBox(EntityTag entity) {
+    public EntityBoundingBox(EntityTag entity) {
         this.entity = entity;
     }
 
     EntityTag entity;
 
-    private ListTag getBoundingBox() {
-        BoundingBox boundingBox = NMSHandler.entityHelper.getBoundingBox(entity.getBukkitEntity());
+    public ListTag getBoundingBox() {
+        BoundingBox boundingBox = entity.getBukkitEntity().getBoundingBox();
         ListTag list = new ListTag();
-        list.addObject(new LocationTag(boundingBox.getLow().toLocation(entity.getWorld())));
-        list.addObject(new LocationTag(boundingBox.getHigh().toLocation(entity.getWorld())));
+        list.addObject(new LocationTag(entity.getWorld(), boundingBox.getMin()));
+        list.addObject(new LocationTag(entity.getWorld(), boundingBox.getMax()));
         return list;
     }
 
@@ -70,7 +70,7 @@ public class EntityBoundingBox implements Property {
         return "bounding_box";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <EntityTag.bounding_box>
@@ -80,7 +80,7 @@ public class EntityBoundingBox implements Property {
         // @description
         // Returns the collision bounding box of the entity in the format "<low>|<high>", essentially a cuboid with decimals.
         // -->
-        PropertyParser.<EntityBoundingBox, ListTag>registerTag(ListTag.class, "bounding_box", (attribute, object) -> {
+        PropertyParser.registerTag(EntityBoundingBox.class, ListTag.class, "bounding_box", (attribute, object) -> {
             return object.getBoundingBox();
         });
     }
@@ -104,8 +104,7 @@ public class EntityBoundingBox implements Property {
             }
             List<LocationTag> locations = mechanism.valueAsType(ListTag.class).filter(LocationTag.class, mechanism.context);
             if (locations.size() == 2) {
-                BoundingBox boundingBox = new BoundingBox(locations.get(0).toVector(), locations.get(1).toVector());
-                NMSHandler.entityHelper.setBoundingBox(entity.getBukkitEntity(), boundingBox);
+                NMSHandler.entityHelper.setBoundingBox(entity.getBukkitEntity(), BoundingBox.of(locations.get(0), locations.get(1)));
                 modifiedBoxes.add(entity.getUUID());
             }
             else {

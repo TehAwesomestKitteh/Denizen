@@ -1,7 +1,7 @@
 package com.denizenscript.denizen.scripts.commands.player;
 
 import com.denizenscript.denizen.utilities.Utilities;
-import com.denizenscript.denizen.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizen.objects.LocationTag;
 import com.denizenscript.denizencore.exceptions.InvalidArgumentsException;
 import com.denizenscript.denizencore.objects.Argument;
@@ -33,6 +33,8 @@ public class CompassCommand extends AbstractCommand {
     //
     // This is not the compass item, but the command is controlling the pointer the item should direct at.
     // This means that all item compasses will point the same direction but differently for each player.
+    //
+    // To affect an individual compass item, use <@link mechanism ItemTag.lodestone_location>
     //
     // The y-axis is not used but its fine to be included in the location argument.
     //

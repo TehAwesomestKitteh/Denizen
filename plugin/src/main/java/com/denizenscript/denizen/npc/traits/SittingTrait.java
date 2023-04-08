@@ -60,17 +60,23 @@ public class SittingTrait extends Trait implements Listener {
 
     @Override
     public void onSpawn() {
+        if (!sitting) {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(Denizen.instance, () -> {
+                if (!sitting && npc != null) {
+                    npc.removeTrait(SittingTrait.class);
+                }
+            }, 1);
+            return;
+        }
         hasSpawned = true;
-        if (sitting) {
-            if (chairLocation == null) {
-                sit();
-            }
-            else {
-                chairLocation = chairLocation.clone();
-                chairLocation.setYaw(npc.getStoredLocation().getYaw());
-                chairLocation.setPitch(npc.getStoredLocation().getPitch());
-                Bukkit.getScheduler().scheduleSyncDelayedTask(Denizen.getInstance(), () -> sit(chairLocation), 1);
-            }
+        if (chairLocation == null) {
+            sit();
+        }
+        else {
+            chairLocation = chairLocation.clone();
+            chairLocation.setYaw(npc.getStoredLocation().getYaw());
+            chairLocation.setPitch(npc.getStoredLocation().getPitch());
+            Bukkit.getScheduler().scheduleSyncDelayedTask(Denizen.getInstance(), () -> sit(chairLocation), 1);
         }
     }
 
@@ -132,7 +138,7 @@ public class SittingTrait extends Trait implements Listener {
             return;
         }
         new NPCTag(npc).action("sit", null);
-        npc.getEntity().teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN);
+        npc.teleport(location, PlayerTeleportEvent.TeleportCause.PLUGIN);
         forceEntitySit(npc.getEntity(), location.clone(), 0);
     }
 
@@ -182,10 +188,8 @@ public class SittingTrait extends Trait implements Listener {
      */
     public void stand() {
         new NPCTag(npc).action("stand", null);
-
         standInternal();
         standInternal();
-
         chairLocation = null;
     }
 
@@ -254,8 +258,8 @@ public class SittingTrait extends Trait implements Listener {
         trait.setSmall(true);
         trait.setMarker(true);
         trait.setVisible(false);
-        holder.data().set(NPC.NAMEPLATE_VISIBLE_METADATA, false);
-        holder.data().set(NPC.DEFAULT_PROTECTED_METADATA, true);
+        holder.data().set(NPC.Metadata.NAMEPLATE_VISIBLE, false);
+        holder.data().set(NPC.Metadata.DEFAULT_PROTECTED, true);
         boolean spawned = holder.spawn(location);
         if (!spawned || !holder.isSpawned()) {
             if (retryCount >= 4) {

@@ -28,7 +28,7 @@ public class ItemArmorStand implements Property {
             "armor_stand_data"
     };
 
-    private ItemArmorStand(ItemTag item) {
+    public ItemArmorStand(ItemTag item) {
         this.item = item;
     }
 
@@ -62,7 +62,7 @@ public class ItemArmorStand implements Property {
         return "armor_stand_data";
     }
 
-    public static void registerTags() {
+    public static void register() {
 
         // <--[tag]
         // @attribute <ItemTag.armor_stand_data>
@@ -74,7 +74,7 @@ public class ItemArmorStand implements Property {
         // Returns a map of basic armor stand data, with keys matching EntityTag property names.
         // Keys: base_plate, visible, marker, is_small, arms
         // -->
-        PropertyParser.<ItemArmorStand, MapTag>registerTag(MapTag.class, "armor_stand_data", (attribute, item) -> {
+        PropertyParser.registerTag(ItemArmorStand.class, MapTag.class, "armor_stand_data", (attribute, item) -> {
             return item.getDataMap();
         });
     }
