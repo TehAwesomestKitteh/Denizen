@@ -2270,6 +2270,7 @@ public class EntityTag implements ObjectTag, Adjustable, EntityFormObject, Flagg
         // <--[tag]
         // @attribute <EntityTag.visual_pose>
         // @returns ElementTag
+        // @mechanism EntityTag.visual_pose
         // @group attributes
         // @description
         // Returns the name of the entity's current visual pose.
@@ -2980,13 +2981,11 @@ public class EntityTag implements ObjectTag, Adjustable, EntityFormObject, Flagg
 
     @Override
     public void adjust(Mechanism mechanism) {
-
         if (isGeneric()) {
             mechanisms.add(mechanism);
             mechanism.fulfill();
             return;
         }
-
         if (getBukkitEntity() == null) {
             if (isCitizensNPC()) {
                 mechanism.echoError("Cannot adjust not-spawned NPC " + getDenizenNPC());
