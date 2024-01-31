@@ -28,7 +28,7 @@ public class DenizenCommandHandler {
     }
 
     // <--[language]
-    // @name denizen permissions
+    // @name Denizen Permissions
     // @group Console Commands
     // @description
     // The following is a list of all permission nodes Denizen uses within Bukkit.
@@ -259,7 +259,7 @@ public class DenizenCommandHandler {
             desc = "Saves the current Denizen save data to file as needed.", modifiers = {"save"},
             min = 1, max = 3, permission = "denizen.basic")
     public void save(CommandContext args, CommandSender sender) throws CommandException {
-        DenizenCore.saveAll();
+        DenizenCore.saveAll(false);
         Denizen.getInstance().saveSaves(false);
         Messaging.send(sender, "Denizen save data saved to file from memory.");
     }

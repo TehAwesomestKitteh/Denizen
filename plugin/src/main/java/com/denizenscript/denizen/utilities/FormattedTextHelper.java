@@ -1,9 +1,12 @@
 package com.denizenscript.denizen.utilities;
 
 import com.denizenscript.denizen.nms.NMSHandler;
+import com.denizenscript.denizen.nms.NMSVersion;
 import com.denizenscript.denizen.objects.properties.bukkit.BukkitElementExtensions;
 import com.denizenscript.denizencore.objects.core.ColorTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
+import com.denizenscript.denizencore.objects.core.ListTag;
+import com.denizenscript.denizencore.objects.core.MapTag;
 import com.denizenscript.denizencore.utilities.AsciiMatcher;
 import com.denizenscript.denizencore.utilities.CoreConfiguration;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
@@ -59,6 +62,9 @@ public class FormattedTextHelper {
     }
 
     public static boolean hasRootFormat(BaseComponent component) {
+        if (component == null) {
+            return false;
+        }
         if (component.hasFormatting()) {
             return true;
         }
@@ -87,7 +93,9 @@ public class FormattedTextHelper {
             builder.append(RESET);
         }
         for (BaseComponent component : components) {
-            builder.append(stringify(component));
+            if (component != null) {
+                builder.append(stringify(component));
+            }
         }
         String output = builder.toString();
         while (output.endsWith(RESET)) {
@@ -145,7 +153,7 @@ public class FormattedTextHelper {
         if (component.isObfuscated()) {
             builder.append(ChatColor.MAGIC);
         }
-        boolean hasFont = component.getFont() != null;
+        boolean hasFont = component.getFontRaw() != null;
         if (hasFont) {
             builder.append(ChatColor.COLOR_CHAR).append("[font=").append(component.getFont()).append("]");
         }
@@ -166,15 +174,16 @@ public class FormattedTextHelper {
         if (component instanceof TextComponent) {
             builder.append(((TextComponent) component).getText());
         }
-        else if (component instanceof TranslatableComponent) {
-            builder.append(ChatColor.COLOR_CHAR).append("[translate=").append(escape(((TranslatableComponent) component).getTranslate()));
-            List<BaseComponent> with = ((TranslatableComponent) component).getWith();
-            if (with != null) {
-                for (BaseComponent withComponent : with) {
-                    builder.append(";").append(escape(stringify(withComponent)));
-                }
+        else if (component instanceof TranslatableComponent translatableComponent) {
+            MapTag map = new MapTag();
+            map.putObject("key", new ElementTag(translatableComponent.getTranslate(), true));
+            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_20) && translatableComponent.getFallback() != null) {
+                map.putObject("fallback", new ElementTag(translatableComponent.getFallback(), true));
             }
-            builder.append("]");
+            if (translatableComponent.getWith() != null) {
+                map.putObject("with", new ListTag(translatableComponent.getWith(), baseComponent -> new ElementTag(stringify(baseComponent), true)));
+            }
+            builder.append(ChatColor.COLOR_CHAR).append("[translate=").append(escape(map.savable())).append(']');
         }
         else if (component instanceof SelectorComponent) {
             builder.append(ChatColor.COLOR_CHAR).append("[selector=").append(escape(((SelectorComponent) component).getSelector())).append("]");
@@ -437,6 +446,41 @@ public class FormattedTextHelper {
         return new BaseComponent[]{new TextComponent(str)};
     }
 
+    private static BaseComponent parseTranslatable(String str, ChatColor baseColor, boolean optimize) {
+        if (!str.startsWith("map@")) {
+            List<String> innardParts = CoreUtilities.split(str, ';');
+            TranslatableComponent component = new TranslatableComponent(unescape(innardParts.get(0)));
+            for (int i = 1; i < innardParts.size(); i++) {
+                for (BaseComponent subComponent : parseInternal(unescape(innardParts.get(i)), baseColor, false, optimize)) {
+                    component.addWith(subComponent);
+                }
+            }
+            return component;
+        }
+        MapTag map = MapTag.valueOf(unescape(str), CoreUtilities.noDebugContext);
+        if (map == null) {
+            return new TextComponent(str);
+        }
+        ElementTag translationKey = map.getElement("key");
+        if (translationKey == null) {
+            return new TextComponent(str);
+        }
+        TranslatableComponent component = new TranslatableComponent(translationKey.asString());
+        ElementTag fallback = map.getElement("fallback");
+        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_20) && fallback != null) {
+            component.setFallback(fallback.asString());
+        }
+        ListTag withList = map.getObjectAs("with", ListTag.class, CoreUtilities.noDebugContext);
+        if (withList != null) {
+            for (String with : withList) {
+                for (BaseComponent withComponent : parseInternal(with, baseColor, false, optimize)) {
+                    component.addWith(withComponent);
+                }
+            }
+        }
+        return component;
+    }
+
     public static BaseComponent[] parseInternal(String str, ChatColor baseColor, boolean cleanBase, boolean optimize) {
         str = CoreUtilities.clearNBSPs(str);
         int firstChar = str.indexOf(ChatColor.COLOR_CHAR);
@@ -457,16 +501,13 @@ public class FormattedTextHelper {
             }
             // Ensure compat with certain weird vanilla translate strings.
             if (str.startsWith(ChatColor.COLOR_CHAR + "[translate=") && str.indexOf(']') == str.length() - 1) {
-                String translatable = str.substring("&[translate=".length(), str.length() - 1);
-                TranslatableComponent component = new TranslatableComponent();
-                List<String> innardParts = CoreUtilities.split(translatable, ';');
-                component.setTranslate(unescape(innardParts.get(0)));
-                for (int i = 1; i < innardParts.size(); i++) {
-                    for (BaseComponent subComponent : parseInternal(unescape(innardParts.get(i)), baseColor, false, optimize)) {
-                        component.addWith(subComponent);
-                    }
-                }
-                return new BaseComponent[] { component };
+                return new BaseComponent[] {parseTranslatable(str.substring("&[translate=".length(), str.length() - 1), baseColor, optimize)};
+            }
+            if (str.length() > 3 && str.startsWith((ChatColor.COLOR_CHAR + "")) && hexMatcher.isMatch(str.charAt(1))
+                    && str.startsWith(ChatColor.COLOR_CHAR + "[translate=", 2) && str.indexOf(']') == str.length() - 1) { // eg "&6&[translate=block.minecraft.ominous_banner]"
+                BaseComponent component = parseTranslatable(str.substring("&[translate=".length() + 2, str.length() - 1), baseColor, optimize);
+                component.setColor(ChatColor.getByChar(str.charAt(1)));
+                return new BaseComponent[] {component};
             }
         }
         if (!optimize) {
@@ -520,7 +561,7 @@ public class FormattedTextHelper {
                             ScoreComponent component = new ScoreComponent(unescape(innardBase.get(1)), unescape(innardParts.get(0)), unescape(innardParts.get(1)));
                             lastText.addExtra(component);
                         }
-                        else if (innardType.equals("keybind") && Utilities.matchesNamespacedKey(innardBase.get(1))) {
+                        else if (innardType.equals("keybind") && Utilities.matchesNamespacedKeyButCaseInsensitive(innardBase.get(1))) {
                             KeybindComponent component = new KeybindComponent();
                             component.setKeybind(unescape(innardBase.get(1)));
                             lastText.addExtra(component);
@@ -530,14 +571,7 @@ public class FormattedTextHelper {
                             lastText.addExtra(component);
                         }
                         else if (innardType.equals("translate")) {
-                            TranslatableComponent component = new TranslatableComponent();
-                            component.setTranslate(unescape(innardBase.get(1)));
-                            for (String extra : innardParts) {
-                                for (BaseComponent subComponent : parseInternal(unescape(extra), baseColor, false, optimize)) {
-                                    component.addWith(subComponent);
-                                }
-                            }
-                            lastText.addExtra(component);
+                            lastText.addExtra(parseTranslatable(innards.substring("translate=".length()), baseColor, optimize));
                         }
                         else if (innardType.equals("click") && innardParts.size() == 1) {
                             int endIndex = findEndIndexFor(str, "click", endBracket);

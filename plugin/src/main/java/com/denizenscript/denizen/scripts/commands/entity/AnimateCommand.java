@@ -57,6 +57,8 @@ public class AnimateCommand extends AbstractCommand {
     //
     // Note that the above list only applies where logical, EG 'WOLF_' animations only apply to wolves.
     //
+    // In versions 1.20+, to specify the direction of damage for the HURT animation, use <@link mechanism EntityTag.play_hurt_animation>
+    //
     // @Tags
     // None
     //
@@ -132,7 +134,7 @@ public class AnimateCommand extends AbstractCommand {
                     else if (effect != null) {
                         if (forPlayers != null) {
                             for (PlayerTag player : forPlayers) {
-                                NMSHandler.packetHelper.sendEntityEffect(player.getPlayerEntity(), entity.getBukkitEntity(), effect.getData());
+                                NMSHandler.packetHelper.sendEntityEffect(player.getPlayerEntity(), entity.getBukkitEntity(), effect);
                             }
                         }
                         else {

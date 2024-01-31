@@ -146,7 +146,7 @@ public class EntityAttributeModifiers implements Property {
     @Override
     public String getPropertyString() {
         MapTag map = getAttributeModifiers();
-        return map.map.isEmpty() ? null : map.savable();
+        return map.isEmpty() ? null : map.savable();
     }
 
     @Override
@@ -195,7 +195,7 @@ public class EntityAttributeModifiers implements Property {
     // - determine <[y]>
     // </code>
     //
-    // See also <@link url https://minecraft.fandom.com/wiki/Attribute#Modifiers>
+    // See also <@link url https://minecraft.wiki/w/Attribute#Modifiers>
     //
     // For a quick and dirty in-line input, you can do for example: [generic_max_health=<list[<map[operation=ADD_NUMBER;amount=20;slot=HEAD]>]>]
     //
@@ -259,7 +259,7 @@ public class EntityAttributeModifiers implements Property {
             try {
                 MapTag input = mechanism.valueAsType(MapTag.class);
                 Attributable ent = getAttributable();
-                for (Map.Entry<StringHolder, ObjectTag> subValue : input.map.entrySet()) {
+                for (Map.Entry<StringHolder, ObjectTag> subValue : input.entrySet()) {
                     Attribute attr = Attribute.valueOf(subValue.getKey().str.toUpperCase());
                     AttributeInstance instance = ent.getAttribute(attr);
                     if (instance == null) {
@@ -297,7 +297,7 @@ public class EntityAttributeModifiers implements Property {
             try {
                 MapTag input = mechanism.valueAsType(MapTag.class);
                 Attributable ent = getAttributable();
-                for (Map.Entry<StringHolder, ObjectTag> subValue : input.map.entrySet()) {
+                for (Map.Entry<StringHolder, ObjectTag> subValue : input.entrySet()) {
                     Attribute attr = Attribute.valueOf(subValue.getKey().str.toUpperCase());
                     AttributeInstance instance = ent.getAttribute(attr);
                     if (instance == null) {
@@ -305,7 +305,16 @@ public class EntityAttributeModifiers implements Property {
                         continue;
                     }
                     for (ObjectTag listValue : CoreUtilities.objectToList(subValue.getValue(), mechanism.context)) {
-                        instance.addModifier(modiferForMap(attr, listValue.asType(MapTag.class, mechanism.context)));
+                        AttributeModifier modifier = modiferForMap(attr, listValue.asType(MapTag.class, mechanism.context));
+                        try {
+                            instance.addModifier(modifier);
+                        }
+                        catch (IllegalArgumentException ex) {
+                            if (!ex.getMessage().equals("Modifier is already applied on this attribute!")) {
+                                throw ex;
+                            }
+                            Debug.echoError("Cannot add attribute with ID '" + modifier.getUniqueId() + "' as the entity already has a modifier with the same ID.");
+                        }
                     }
                 }
             }

@@ -5,7 +5,6 @@ import com.denizenscript.denizen.objects.EntityTag;
 import com.denizenscript.denizen.objects.WorldTag;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
-import com.denizenscript.denizencore.utilities.CoreUtilities;
 import io.papermc.paper.event.entity.EntityPortalReadyEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -43,6 +42,12 @@ public class EntityTeleportedByPortalScriptEvent extends BukkitScriptEvent imple
     public EntityTeleportedByPortalScriptEvent() {
         registerCouldMatcher("<entity> teleported by portal");
         registerSwitches("to", "portal_type");
+        this.<EntityTeleportedByPortalScriptEvent, WorldTag>registerDetermination("target_world", WorldTag.class, (evt, context, targetWorld) -> {
+            evt.event.setTargetWorld(targetWorld.getWorld());
+        });
+        this.<EntityTeleportedByPortalScriptEvent>registerTextDetermination("remove_target_world", (evt) -> {
+            evt.event.setTargetWorld(null);
+        });
     }
 
     EntityPortalReadyEvent event;
@@ -72,25 +77,6 @@ public class EntityTeleportedByPortalScriptEvent extends BukkitScriptEvent imple
             case "portal_type" -> new ElementTag(event.getPortalType());
             default -> super.getContext(name);
         };
-    }
-
-    @Override
-    public boolean applyDetermination(ScriptPath path, ObjectTag determinationObj) {
-        if (determinationObj instanceof ElementTag) {
-            String determination = CoreUtilities.toLowerCase(determinationObj.toString());
-            if (determination.startsWith("target_world:")) {
-                WorldTag world = WorldTag.valueOf(determination.substring("target_world:".length()), getTagContext(path));
-                if (world != null) {
-                    event.setTargetWorld(world.getWorld());
-                    return true;
-                }
-            }
-            else if (determination.equals("remove_target_world")) {
-                event.setTargetWorld(null);
-                return true;
-            }
-        }
-        return super.applyDetermination(path, determinationObj);
     }
 
     @EventHandler

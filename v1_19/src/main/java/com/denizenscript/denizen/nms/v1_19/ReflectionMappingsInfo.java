@@ -59,8 +59,10 @@ public class ReflectionMappingsInfo {
     // net.minecraft.world.level.biome.Biome
     public static String Biome_climateSettings = "i";
 
-    // net.minecraft.world.level.biome.Biome$ClimateSettings
-    public static String BiomeClimateSettings_temperatureModifier = "d";
+    // net.minecraft.world.level.biome.BiomeSpecialEffects
+    public static String BiomeSpecialEffects_foliageColorOverride = "f";
+    public static String BiomeSpecialEffects_fogColor = "b";
+    public static String BiomeSpecialEffects_waterFogColor = "d";
 
     // net.minecraft.network.Connection
     public static String Connection_receiving = "k";
@@ -74,9 +76,6 @@ public class ReflectionMappingsInfo {
 
     // net.minecraft.network.protocol.game.ClientboundPlayerAbilitiesPacket
     public static String ClientboundPlayerAbilitiesPacket_walkingSpeed = "j";
-
-    // net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket
-    public static String ClientboundSetEntityDataPacket_packedItems = "c";
 
     // net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket
     public static String ClientboundSectionBlocksUpdatePacket_sectionPos = "b";

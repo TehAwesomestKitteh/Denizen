@@ -1,9 +1,16 @@
 package com.denizenscript.denizen.objects;
 
 import com.denizenscript.denizen.events.BukkitScriptEvent;
+import com.denizenscript.denizen.nms.NMSHandler;
+import com.denizenscript.denizen.nms.NMSVersion;
 import com.denizenscript.denizen.nms.abstracts.BiomeNMS;
+import com.denizenscript.denizen.nms.interfaces.EntityHelper;
+import com.denizenscript.denizen.nms.util.PlayerProfile;
 import com.denizenscript.denizen.objects.properties.bukkit.BukkitColorExtensions;
-import com.denizenscript.denizen.objects.properties.material.*;
+import com.denizenscript.denizen.objects.properties.material.MaterialAttachmentFace;
+import com.denizenscript.denizen.objects.properties.material.MaterialDirectional;
+import com.denizenscript.denizen.objects.properties.material.MaterialDistance;
+import com.denizenscript.denizen.objects.properties.material.MaterialHalf;
 import com.denizenscript.denizen.scripts.commands.world.SwitchCommand;
 import com.denizenscript.denizen.utilities.*;
 import com.denizenscript.denizen.utilities.blocks.SpawnableHelper;
@@ -11,24 +18,21 @@ import com.denizenscript.denizen.utilities.flags.DataPersistenceFlagTracker;
 import com.denizenscript.denizen.utilities.flags.LocationFlagSearchHelper;
 import com.denizenscript.denizen.utilities.world.PathFinder;
 import com.denizenscript.denizen.utilities.world.WorldListChangeTracker;
-import com.denizenscript.denizencore.objects.core.*;
-import com.denizenscript.denizencore.tags.TagManager;
-import com.denizenscript.denizencore.utilities.debugging.Debug;
-import com.denizenscript.denizen.utilities.entity.DenizenEntityType;
 import com.denizenscript.denizencore.flags.AbstractFlagTracker;
 import com.denizenscript.denizencore.flags.FlaggableObject;
 import com.denizenscript.denizencore.objects.*;
-import com.denizenscript.denizen.nms.NMSHandler;
-import com.denizenscript.denizen.nms.interfaces.EntityHelper;
-import com.denizenscript.denizen.nms.util.PlayerProfile;
+import com.denizenscript.denizencore.objects.core.*;
 import com.denizenscript.denizencore.objects.notable.Notable;
 import com.denizenscript.denizencore.objects.notable.Note;
 import com.denizenscript.denizencore.objects.notable.NoteManager;
 import com.denizenscript.denizencore.tags.Attribute;
 import com.denizenscript.denizencore.tags.ObjectTagProcessor;
 import com.denizenscript.denizencore.tags.TagContext;
+import com.denizenscript.denizencore.tags.TagManager;
 import com.denizenscript.denizencore.utilities.CoreUtilities;
 import com.denizenscript.denizencore.utilities.SimplexNoise;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
+import com.denizenscript.denizencore.utilities.text.StringHolder;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.*;
@@ -48,20 +52,20 @@ import org.bukkit.material.Attachable;
 import org.bukkit.material.MaterialData;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.*;
 import org.bukkit.util.Vector;
+import org.bukkit.util.*;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class LocationTag extends org.bukkit.Location implements ObjectTag, Notable, Adjustable, FlaggableObject {
+public class LocationTag extends org.bukkit.Location implements VectorObject, ObjectTag, Notable, Adjustable, FlaggableObject {
 
     // <--[ObjectType]
     // @name LocationTag
     // @prefix l
     // @base ElementTag
-    // @implements FlaggableObject
+    // @implements FlaggableObject, VectorObject
     // @ExampleTagBase player.location
     // @ExampleValues <player.location>,<npc.location>
     // @ExampleForReturns
@@ -215,7 +219,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
     }
 
     @Override
-    public ObjectTag duplicate() {
+    public LocationTag duplicate() {
         return clone();
     }
 
@@ -825,6 +829,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
 
     public static void register() {
 
+        VectorObject.register(LocationTag.class, tagProcessor);
         AbstractFlagTracker.registerFlagHandlers(tagProcessor);
 
         // <--[tag]
@@ -881,7 +886,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         // @group math
         // @description
         // Returns the location above this location. Optionally specify a number of blocks to go up.
-        // This just moves straight along the Y axis, equivalent to <@link tag LocationTag.add> with input 0,1,0 (or the input value instead of '1').
+        // This just moves straight along the Y axis, equivalent to <@link tag VectorObject.add> with input 0,1,0 (or the input value instead of '1').
         // -->
         tagProcessor.registerTag(LocationTag.class, "above", (attribute, object) -> {
             return new LocationTag(object.clone().add(0, attribute.hasParam() ? attribute.getDoubleParam() : 1, 0));
@@ -893,7 +898,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         // @group math
         // @description
         // Returns the location below this location. Optionally specify a number of blocks to go down.
-        // This just moves straight along the Y axis, equivalent to <@link tag LocationTag.sub> with input 0,1,0 (or the input value instead of '1').
+        // This just moves straight along the Y axis, equivalent to <@link tag VectorObject.sub> with input 0,1,0 (or the input value instead of '1').
         // -->
         tagProcessor.registerTag(LocationTag.class, "below", (attribute, object) -> {
             return new LocationTag(object.clone().subtract(0, attribute.hasParam() ? attribute.getDoubleParam() : 1, 0));
@@ -1022,7 +1027,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         // @description
         // Returns the location relative to this location. Input is a vector location of the form left,up,forward.
         // For example, input -1,1,1 will return a location 1 block to the right, 1 block up, and 1 block forward.
-        // To just get the location relative to this without rotation math, use <@link tag LocationTag.add> instead.
+        // To just get the location relative to this without rotation math, use <@link tag VectorObject.add> instead.
         // -->
         tagProcessor.registerTag(LocationTag.class, "relative", (attribute, object) -> {
             if (!attribute.hasParam()) {
@@ -1250,13 +1255,14 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         // @mechanism LocationTag.spawner_type
         // @group world
         // @description
-        // Returns the type of entity spawned by a mob spawner.
+        // Returns the type of entity spawned by a mob spawner, if any.
         // -->
         tagProcessor.registerTag(EntityTag.class, "spawner_type", (attribute, object) -> {
-            if (!(object.getBlockStateForTag(attribute) instanceof CreatureSpawner)) {
+            if (!(object.getBlockStateForTag(attribute) instanceof CreatureSpawner spawner)) {
                 return null;
             }
-            return new EntityTag(DenizenEntityType.getByName(((CreatureSpawner) object.getBlockStateForTag(attribute)).getSpawnedType().name()));
+            EntityType spawnedType = spawner.getSpawnedType();
+            return spawnedType != null ? new EntityTag(spawnedType) : null;
         });
 
         // <--[tag]
@@ -1270,7 +1276,9 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
             if (!(object.getBlockStateForTag(attribute) instanceof CreatureSpawner)) {
                 return null;
             }
-            return NMSHandler.entityHelper.getMobSpawnerDisplayEntity(((CreatureSpawner) object.getBlockStateForTag(attribute))).describe(attribute.context);
+            EntityTag fakeEnt = NMSHandler.entityHelper.getMobSpawnerDisplayEntity(((CreatureSpawner) object.getBlockStateForTag(attribute)));
+            fakeEnt.isFake = true;
+            return fakeEnt.describe(attribute.context);
         });
 
         // <--[tag]
@@ -3218,100 +3226,6 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         });
 
         // <--[tag]
-        // @attribute <LocationTag.x>
-        // @returns ElementTag(Decimal)
-        // @group identity
-        // @description
-        // Returns the X coordinate of the location.
-        // -->
-        tagProcessor.registerTag(ElementTag.class, "x", (attribute, object) -> {
-            return new ElementTag(object.getX());
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.y>
-        // @returns ElementTag(Decimal)
-        // @group identity
-        // @description
-        // Returns the Y coordinate of the location.
-        // -->
-        tagProcessor.registerTag(ElementTag.class, "y", (attribute, object) -> {
-            return new ElementTag(object.getY());
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.z>
-        // @returns ElementTag(Decimal)
-        // @group identity
-        // @description
-        // Returns the Z coordinate of the location.
-        // -->
-        tagProcessor.registerTag(ElementTag.class, "z", (attribute, object) -> {
-            return new ElementTag(object.getZ());
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.xyz>
-        // @returns ElementTag
-        // @group identity
-        // @description
-        // Returns the location in "x,y,z" format.
-        // For example: 1,2,3
-        // World, yaw, and pitch will be excluded from this output.
-        // -->
-        tagProcessor.registerTag(ElementTag.class, "xyz", (attribute, object) -> {
-            return new ElementTag(CoreUtilities.doubleToString(object.getX()) + "," + CoreUtilities.doubleToString(object.getY()) + "," + CoreUtilities.doubleToString(object.getZ()));
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.with_x[<number>]>
-        // @returns LocationTag
-        // @group identity
-        // @description
-        // Returns a copy of the location with a changed X value.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "with_x", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            LocationTag output = object.clone();
-            output.setX(attribute.getDoubleParam());
-            return output;
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.with_y[<number>]>
-        // @returns LocationTag
-        // @group identity
-        // @description
-        // Returns a copy of the location with a changed Y value.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "with_y", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            LocationTag output = object.clone();
-            output.setY(attribute.getDoubleParam());
-            return output;
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.with_z[<number>]>
-        // @returns LocationTag
-        // @group identity
-        // @description
-        // Returns a copy of the location with a changed Z value.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "with_z", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            LocationTag output = object.clone();
-            output.setZ(attribute.getDoubleParam());
-            return output;
-        });
-
-        // <--[tag]
         // @attribute <LocationTag.with_yaw[<number>]>
         // @returns LocationTag
         // @group identity
@@ -3374,115 +3288,6 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
             }
             return new ElementTag(noteName);
         }, "notable_name");
-
-        // <--[tag]
-        // @attribute <LocationTag.add[<location>]>
-        // @returns LocationTag
-        // @group math
-        // @description
-        // Returns the location with the specified coordinates added to it.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "add", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            String[] ints = attribute.getParam().replace("l@", "").split(",", 4); // TODO: Just LocationTag.valueOf?
-            if (ints.length >= 3) {
-                if (ArgumentHelper.matchesDouble(ints[0])
-                        && ArgumentHelper.matchesDouble(ints[1])
-                        && ArgumentHelper.matchesDouble(ints[2])) {
-                    return new LocationTag(object.clone().add(Double.parseDouble(ints[0]),
-                            Double.parseDouble(ints[1]),
-                            Double.parseDouble(ints[2])));
-                }
-            }
-            if (LocationTag.matches(attribute.getParam())) {
-                return object.clone().add(attribute.paramAsType(LocationTag.class));
-            }
-            return null;
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.sub[<location>]>
-        // @returns LocationTag
-        // @group math
-        // @description
-        // Returns the location with the specified coordinates subtracted from it.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "sub", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            String[] ints = attribute.getParam().replace("l@", "").split(",", 4); // TODO: Just LocationTag.valueOf?
-            if (ints.length == 3 || ints.length == 4) {
-                if (ArgumentHelper.matchesDouble(ints[0])
-                        && ArgumentHelper.matchesDouble(ints[1])
-                        && ArgumentHelper.matchesDouble(ints[2])) {
-                    return new LocationTag(object.clone().subtract(Double.parseDouble(ints[0]),
-                            Double.parseDouble(ints[1]),
-                            Double.parseDouble(ints[2])));
-                }
-            }
-            if (LocationTag.matches(attribute.getParam())) {
-                return new LocationTag(object.clone().subtract(attribute.paramAsType(LocationTag.class)));
-            }
-            return null;
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.mul[<length>]>
-        // @returns LocationTag
-        // @group math
-        // @description
-        // Returns the location multiplied by the specified length.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "mul", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            return new LocationTag(object.clone().multiply(Double.parseDouble(attribute.getParam())));
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.div[<length>]>
-        // @returns LocationTag
-        // @group math
-        // @description
-        // Returns the location divided by the specified length.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "div", (attribute, object) -> {
-            if (!attribute.hasParam()) {
-                return null;
-            }
-            return new LocationTag(object.clone().multiply(1D / Double.parseDouble(attribute.getParam())));
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.normalize>
-        // @returns LocationTag
-        // @group math
-        // @description
-        // Returns a 1-length vector in the same direction as this vector location.
-        // -->
-        tagProcessor.registerTag(LocationTag.class, "normalize", (attribute, object) -> {
-            double len = Math.sqrt(Math.pow(object.getX(), 2) + Math.pow(object.getY(), 2) + Math.pow(object.getZ(), 2));
-            if (len == 0) {
-                len = 1;
-            }
-            return new LocationTag(object.clone().multiply(1D / len));
-        });
-
-        // <--[tag]
-        // @attribute <LocationTag.vector_length>
-        // @returns ElementTag(Decimal)
-        // @synonyms LocationTag.magnitude
-        // @group math
-        // @description
-        // Returns the 3D length of the vector/location.
-        // -->
-        tagProcessor.registerTag(ElementTag.class, "vector_length", (attribute, object) -> {
-            return new ElementTag(Math.sqrt(Math.pow(object.getX(), 2) + Math.pow(object.getY(), 2) + Math.pow(object.getZ(), 2)));
-        });
 
         // <--[tag]
         // @attribute <LocationTag.vector_to_face>
@@ -4100,8 +3905,8 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
             else if (material.getMaterial() == Material.WALL_TORCH || material.getMaterial() == Material.REDSTONE_WALL_TORCH || material.getMaterial() == Material.SOUL_WALL_TORCH) {
                 face = ((Directional) material.getModernData()).getFacing().getOppositeFace();
             }
-            else if (MaterialSwitchFace.describes(material)) {
-                face = MaterialSwitchFace.getFrom(material).getAttachedTo();
+            else if (MaterialAttachmentFace.describes(material)) {
+                face = new MaterialAttachmentFace(material).getAttachedTo();
             }
             else if (material.hasModernData() && material.getModernData() instanceof org.bukkit.block.data.type.WallSign) {
                 face = ((org.bukkit.block.data.type.WallSign) material.getModernData()).getFacing().getOppositeFace();
@@ -4376,7 +4181,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         // - integrity: ElementTag(Decimal): The integrity of the structure (0-1). Lower integrity values will result in more blocks being removed when loading a structure.
         // used with the seed to determine which blocks are randomly removed to mimic "decay".
         // - metadata: ElementTag: Only applies in DATA mode, sets specific functions that can be applied to the structure,
-        // check the Minecraft wiki (<@link url https://minecraft.gamepedia.com/Structure_Block#Data>) for more information.
+        // check the Minecraft wiki (<@link url https://minecraft.wiki/w/Structure_Block#Data>) for more information.
         // - mirror: ElementTag: How the structure is mirrored; "NONE", "LEFT_RIGHT", or "FRONT_BACK".
         // - box_position: LocationTag: The position of the structure's bounding box, relative to the position of the structure block. Maximum allowed distance is 48 blocks in any direction.
         // - rotation: ElementTag: The rotation of the structure; "NONE", "CLOCKWISE_90", "CLOCKWISE_180", or "COUNTERCLOCKWISE_90".
@@ -4411,9 +4216,261 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
             output.putObject("show_invisible", new ElementTag(structure.isShowAir()));
             return output;
         });
+
+        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_19)) {
+
+            // <--[tag]
+            // @attribute <LocationTag.temperature>
+            // @returns ElementTag(Decimal)
+            // @description
+            // Returns a location's temperature, based on the biome it's in.
+            // If this is less than 0.15, snow will form on the ground when weather occurs in the world and a layer of ice will form over water.
+            // See also <@link tag BiomeTag.temperature_at>.
+            // @example
+            // # Gives the player water if they are standing in a warm location.
+            // - if <player.location.temperature> > 0.5:
+            //   - give water_bucket
+            // -->
+            tagProcessor.registerTag(ElementTag.class, "temperature", (attribute, object) -> {
+                BiomeNMS biome = object.getBiomeForTag(attribute);
+                return biome != null ? new ElementTag(biome.getTemperatureAt(object)) : null;
+            });
+
+            // <--[tag]
+            // @attribute <LocationTag.downfall_type>
+            // @returns ElementTag
+            // @description
+            // Returns a location's downfall type (for when a world has weather), based on the biome it's in.
+            // This can be RAIN, SNOW, or NONE.
+            // See also <@link tag BiomeTag.downfall_at>.
+            // @example
+            // # Tells the linked player what the downfall type at their location is.
+            // - narrate "The downfall type at your location is: <player.location.downfall_type>!"
+            // -->
+            tagProcessor.registerTag(ElementTag.class, "downfall_type", (attribute, object) -> {
+                BiomeNMS biome = object.getBiomeForTag(attribute);
+                return biome != null ? new ElementTag(biome.getDownfallTypeAt(object)) : null;
+            });
+
+            // <--[tag]
+            // @attribute <LocationTag.last_interacted_slot>
+            // @returns ElementTag(Number)
+            // @mechanism LocationTag.last_interacted_slot
+            // @description
+            // Returns the last interacted slot of a Chiseled Bookshelf inventory.
+            // -->
+            tagProcessor.registerTag(ElementTag.class, "last_interacted_slot", (attribute, object) -> {
+                if (!(object.getBlockStateForTag(attribute) instanceof ChiseledBookshelf chiseledBookshelf)) {
+                    return null;
+                }
+                return new ElementTag(chiseledBookshelf.getLastInteractedSlot() + 1);
+            });
+        }
+
+        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_20)) {
+
+            // <--[tag]
+            // @attribute <LocationTag.sherds>
+            // @returns MapTag
+            // @mechanism LocationTag.sherds
+            // @description
+            // Returns a decorated pot's sherds as a map of sides to <@link objecttype MaterialTag>s of the sherds.
+            // The map will always contain every side, with a brick being the default value for when a side has no sherd.
+            // Valid sides are: <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/DecoratedPot.Side.html>.
+            // Valid sherd materials are either a brick or any pottery sherd.
+            // @example
+            // # Tells the player if they're looking at a pot that has any sherds.
+            // - if <player.cursor_on.sherds.values.contains_match[!brick].if_null[false]>:
+            //   - narrate "That pot has sherds in it! You should check!"
+            // - else:
+            //   - narrate "Try looking somewhere else."
+            // -->
+            tagProcessor.registerTag(MapTag.class, "sherds", (attribute, object) -> {
+                if (!(object.getBlockStateForTag(attribute) instanceof DecoratedPot decoratedPot)) {
+                    return null;
+                }
+                MapTag sherdsMap = new MapTag();
+                for (Map.Entry<DecoratedPot.Side, Material> entry : decoratedPot.getSherds().entrySet()) {
+                    sherdsMap.putObject(entry.getKey().name(), new MaterialTag(entry.getValue()));
+                }
+                return sherdsMap;
+            });
+
+            // <--[mechanism]
+            // @object LocationTag
+            // @name sherds
+            // @input MapTag
+            // @description
+            // Sets a decorated pot's sherds, input is a map of sides to <@link objecttype MaterialTag>s of the sherds.
+            // You only need to specify the sides you want to set, and the default value (for removing a side's sherd) is a brick.
+            // Valid sides are: <@link url https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/DecoratedPot.Side.html>.
+            // Valid materials are either a brick or any pottery sherd.
+            // @tags
+            // <LocationTag.sherds>
+            // @example
+            // # Sets a decorated pot's left side to a random sherd.
+            // - adjust <[potLocation]> sherds:[left=<server.vanilla_tagged_materials[decorated_pot_sherds].random>]
+            // @example
+            // # Removes a decorated pot's sherds.
+            // - adjust <[potLocation]> sherds:[left=brick;right=brick;front=brick;back=brick]
+            // -->
+            tagProcessor.registerMechanism("sherds", false, MapTag.class, (object, mechanism, input) -> {
+                if (!(object.getBlockState() instanceof DecoratedPot decoratedPot)) {
+                    mechanism.echoError("Mechanism 'LocationTag.sherds' is only valid for decorated pots.");
+                    return;
+                }
+                for (Map.Entry<StringHolder, ObjectTag> entry : input.entrySet()) {
+                    DecoratedPot.Side side = ElementTag.asEnum(DecoratedPot.Side.class, entry.getKey().low);
+                    if (side == null) {
+                        mechanism.echoError("Invalid decorated pot side specified: " + entry.getKey());
+                        continue;
+                    }
+                    MaterialTag sherd = entry.getValue().asType(MaterialTag.class, mechanism.context);
+                    if (sherd == null || !Tag.ITEMS_DECORATED_POT_INGREDIENTS.isTagged(sherd.getMaterial())) {
+                        mechanism.echoError("Invalid sherd material specified: " + entry.getValue());
+                        continue;
+                    }
+                    decoratedPot.setSherd(side, sherd.getMaterial());
+                }
+                decoratedPot.update();
+            });
+
+            // <--[tag]
+            // @attribute <LocationTag.buried_item>
+            // @returns ItemTag
+            // @mechanism LocationTag.buried_item
+            // @description
+            // Returns the item buried in a brushable block (also referred to as "suspicious blocks"). Returns air if there is no item buried.
+            // -->
+            tagProcessor.registerTag(ItemTag.class, "buried_item", (attribute, object) -> {
+                if (!(object.getBlockStateForTag(attribute) instanceof BrushableBlock brushableBlock)) {
+                    return null;
+                }
+                return new ItemTag(brushableBlock.getItem());
+            });
+
+            // <--[mechanism]
+            // @object LocationTag
+            // @name buried_item
+            // @input ItemTag
+            // @description
+            // Sets the buried item in a brushable block (also referred to as "suspicious blocks"). Set to air to have no item buried.
+            // @tags
+            // <LocationTag.buried_item>
+            // -->
+            tagProcessor.registerMechanism("buried_item", false, ItemTag.class, (object, mechanism, item) -> {
+                if (!(object.getBlockState() instanceof BrushableBlock brushableBlock)) {
+                    mechanism.echoError("Mechanism 'LocationTag.buried_item' is only valid for brushable blocks.");
+                    return;
+                }
+                brushableBlock.setItem(item.getItemStack());
+                brushableBlock.update();
+            });
+
+            // <--[tag]
+            // @attribute <LocationTag.waxed>
+            // @returns ElementTag(Boolean)
+            // @mechanism LocationTag.waxed
+            // @group world
+            // @description
+            // If the location is a sign block, returns whether it is waxed (locked to prevent players editing the text).
+            // -->
+            tagProcessor.registerTag(ElementTag.class, "waxed", (attribute, object) -> {
+                if (!(object.getBlockStateForTag(attribute) instanceof Sign sign)) {
+                    attribute.echoError("Location is not a valid Sign block.");
+                    return null;
+                }
+                return new ElementTag(sign.isWaxed());
+            });
+
+            // <--[mechanism]
+            // @object LocationTag
+            // @name waxed
+            // @input ElementTag(Boolean)
+            // @description
+            // Sets whether the sign at the location is waxed (locked to prevent players editing the text).
+            // @tags
+            // <LocationTag.waxed>
+            // -->
+            tagProcessor.registerMechanism("waxed", false, ElementTag.class, (object, mechanism, value) -> {
+                if (!mechanism.requireBoolean()) {
+                    return;
+                }
+                if (!(object.getBlockState() instanceof Sign sign)) {
+                    mechanism.echoError("'waxed' mechanism can only be called on Sign blocks.");
+                    return;
+                }
+                sign.setWaxed(value.asBoolean());
+                sign.update();
+            });
+
+            // <--[tag]
+            // @attribute <LocationTag.slot[<vector>]>
+            // @returns ElementTag(Number)
+            // @description
+            // Returns the appropriate slot based on a given point along the bookshelves' surface relative to its position.
+            // It will return 0 if the given vector is not within the bounds of any slot.
+            // See also <@link tag EntityTag.bookshelf_slot>
+            // @Example
+            // # Obtain and narrate the slot that the player right-clicked.
+            // on player right clicks chiseled_bookshelf:
+            // - define slot <player.eye_location.ray_trace.sub[<context.location>]>
+            // - narrate <context.location.slot[<[slot]>]>
+            // -->
+            tagProcessor.registerTag(ElementTag.class, LocationTag.class, "slot", (attribute, object, input) -> {
+                if (!(object.getBlockStateForTag(attribute) instanceof ChiseledBookshelf chiseledBookshelf)) {
+                    return null;
+                }
+                return new ElementTag(chiseledBookshelf.getSlot(input.toVector()) + 1);
+            });
+        }
+
+        // <--[mechanism]
+        // @object LocationTag
+        // @name spawner_type
+        // @input EntityTag
+        // @description
+        // Sets the entity that a mob spawner will spawn.
+        // Provide no input to unset (only on 1.20 and above).
+        // @tags
+        // <LocationTag.spawner_type>
+        // -->
+        tagProcessor.registerMechanism("spawner_type", false, (object, mechanism) -> {
+            if (!(object.getBlockState() instanceof CreatureSpawner spawner)) {
+                mechanism.echoError("Mechanism 'LocationTag.spawner_type' is only valid for spawners.");
+                return;
+            }
+            if (!mechanism.hasValue() && NMSHandler.getVersion().isAtLeast(NMSVersion.v1_20)) {
+                spawner.setSpawnedType(null);
+                spawner.update();
+            }
+            else if (mechanism.requireObject(EntityTag.class)) {
+                NMSHandler.blockHelper.setSpawnerSpawnedType(spawner, mechanism.valueAsType(EntityTag.class));
+                spawner.update();
+            }
+        });
+
+        // <--[mechanism]
+        // @object LocationTag
+        // @name last_interacted_slot
+        // @input ElementTag(Number)
+        // @description
+        // Sets the last interacted slot of a Chiseled Bookshelf inventory.
+        // @tags
+        // <LocationTag.last_interacted_slot>
+        // -->
+        tagProcessor.registerMechanism("last_interacted_slot", false, ElementTag.class, (object, mechanism, input) -> {
+            if (!(object.getBlockState() instanceof ChiseledBookshelf chiseledBookshelf)) {
+                mechanism.echoError("Mechanism 'LocationTag.last_interacted_slot' is only valid for Chiseled Bookshelves.");
+                return;
+            }
+            if (mechanism.requireInteger()) {
+                chiseledBookshelf.setLastInteractedSlot(input.asInt() - 1);
+            }
+        });
     }
 
-    public static ObjectTagProcessor<LocationTag> tagProcessor = new ObjectTagProcessor<>();
+    public static final ObjectTagProcessor<LocationTag> tagProcessor = new ObjectTagProcessor<>();
 
     @Override
     public ObjectTag getObjectAttribute(Attribute attribute) {
@@ -4491,21 +4548,6 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
                 return;
             }
             NMSHandler.blockHelper.setSpawnerCustomRules(spawner, skyMin.asInt(), skyMax.asInt(), blockMin.asInt(), blockMax.asInt());
-            spawner.update();
-        }
-
-        // <--[mechanism]
-        // @object LocationTag
-        // @name spawner_type
-        // @input EntityTag
-        // @description
-        // Sets the entity that a mob spawner will spawn.
-        // @tags
-        // <LocationTag.spawner_type>
-        // -->
-        if (mechanism.matches("spawner_type") && mechanism.requireObject(EntityTag.class) && getBlockState() instanceof CreatureSpawner) {
-            CreatureSpawner spawner = ((CreatureSpawner) getBlockState());
-            NMSHandler.blockHelper.setSpawnerSpawnedType(spawner, mechanism.valueAsType(EntityTag.class));
             spawner.update();
         }
 
@@ -5348,7 +5390,7 @@ public class LocationTag extends org.bukkit.Location implements ObjectTag, Notab
         // - integrity: ElementTag(Decimal): The integrity of the structure (0-1). Lower integrity values will result in more blocks being removed when loading a structure.
         // used with the seed to determine which blocks are randomly removed to mimic "decay".
         // - metadata: ElementTag: Can only be set while in DATA mode. sets specific functions that can be applied to the structure,
-        // check the Minecraft wiki (<@link url https://minecraft.gamepedia.com/Structure_Block#Data>) for more information.
+        // check the Minecraft wiki (<@link url https://minecraft.wiki/w/Structure_Block#Data>) for more information.
         // - mirror: ElementTag: How the structure is mirrored; "NONE", "LEFT_RIGHT", or "FRONT_BACK".
         // - box_position: LocationTag: The position of the structure's bounding box, relative to the position of the structure block. Maximum allowed distance is 48 blocks in any direction.
         // - rotation: ElementTag: The rotation of the structure; "NONE", "CLOCKWISE_90", "CLOCKWISE_180", or "COUNTERCLOCKWISE_90".

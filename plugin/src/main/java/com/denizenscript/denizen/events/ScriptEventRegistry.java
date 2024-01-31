@@ -73,6 +73,7 @@ public class ScriptEventRegistry {
         ScriptEvent.registerScriptEvent(BlockGrowsScriptEvent.class);
         ScriptEvent.registerScriptEvent(BlockIgnitesScriptEvent.class);
         ScriptEvent.registerScriptEvent(BlockPhysicsScriptEvent.class);
+        ScriptEvent.registerScriptEvent(BlockShearEntityScriptEvent.class);
         ScriptEvent.registerScriptEvent(BlockSpreadsScriptEvent.class);
         ScriptEvent.registerScriptEvent(BrewingStandFueledScriptEvent.class);
         ScriptEvent.registerScriptEvent(BrewsScriptEvent.class);
@@ -86,6 +87,11 @@ public class ScriptEventRegistry {
         ScriptEvent.registerScriptEvent(PistonExtendsScriptEvent.class);
         ScriptEvent.registerScriptEvent(PistonRetractsScriptEvent.class);
         ScriptEvent.registerScriptEvent(RedstoneScriptEvent.class);
+        ScriptEvent.registerScriptEvent(SpongeAbsorbsScriptEvent.class);
+        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_19)) {
+            ScriptEvent.registerScriptEvent(BrewingStartsScriptEvent.class);
+            ScriptEvent.registerScriptEvent(TNTPrimesScriptEvent.class);
+        }
 
         // Entity events
         if (!Denizen.supportsPaper) {
@@ -123,6 +129,7 @@ public class ScriptEventRegistry {
         ScriptEvent.registerScriptEvent(EntityShootsBowScriptEvent.class);
         ScriptEvent.registerScriptEvent(EntitySpawnerSpawnScriptEvent.class);
         ScriptEvent.registerScriptEvent(EntitySpawnScriptEvent.class);
+        ScriptEvent.registerScriptEvent(EntitySpellCastScriptEvent.class);
         ScriptEvent.registerScriptEvent(EntitySwimScriptEvent.class);
         ScriptEvent.registerScriptEvent(EntityTamesScriptEvent.class);
         ScriptEvent.registerScriptEvent(EntityTargetsScriptEvent.class);

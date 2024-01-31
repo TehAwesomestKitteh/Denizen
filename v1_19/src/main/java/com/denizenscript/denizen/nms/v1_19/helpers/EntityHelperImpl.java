@@ -169,12 +169,6 @@ public class EntityHelperImpl extends EntityHelper {
     }
 
     @Override
-    public Entity getEntity(World world, UUID uuid) {
-        net.minecraft.world.entity.Entity entity = ((CraftWorld) world).getHandle().getEntity(uuid);
-        return entity == null ? null : entity.getBukkitEntity();
-    }
-
-    @Override
     public CompoundTag getNbtData(Entity entity) {
         net.minecraft.nbt.CompoundTag compound = new net.minecraft.nbt.CompoundTag();
         ((CraftEntity) entity).getHandle().saveAsPassenger(compound);
@@ -450,9 +444,8 @@ public class EntityHelperImpl extends EntityHelper {
     }
 
     @Override
-    public float getBaseYaw(Entity entity) {
-        net.minecraft.world.entity.Entity handle = ((CraftEntity) entity).getHandle();
-        return ((net.minecraft.world.entity.LivingEntity) handle).yBodyRot;
+    public float getBaseYaw(LivingEntity entity) {
+        return ((CraftLivingEntity) entity).getHandle().yBodyRot;
     }
 
     @Override
@@ -588,15 +581,15 @@ public class EntityHelperImpl extends EntityHelper {
     }
 
     @Override
-    public void setHeadAngle(Entity entity, float angle) {
+    public void setHeadAngle(LivingEntity entity, float angle) {
         net.minecraft.world.entity.LivingEntity handle = ((CraftLivingEntity) entity).getHandle();
         handle.yHeadRot = angle;
         handle.setYHeadRot(angle);
     }
 
     @Override
-    public void setEndermanAngry(Entity entity, boolean angry) {
-        ((CraftEnderman) entity).getHandle().getEntityData().set(ENTITY_ENDERMAN_DATAWATCHER_SCREAMING, angry);
+    public void setEndermanAngry(Enderman enderman, boolean angry) {
+        ((CraftEnderman) enderman).getHandle().getEntityData().set(ENTITY_ENDERMAN_DATAWATCHER_SCREAMING, angry);
     }
 
     public static class FakeDamageSrc extends DamageSource { public DamageSource real; public FakeDamageSrc(DamageSource src) { super(null); real = src; } }
@@ -723,9 +716,9 @@ public class EntityHelperImpl extends EntityHelper {
     public static final MethodHandle FALLINGBLOCK_TYPE_SETTER = ReflectionHelper.getFinalSetterForFirstOfType(net.minecraft.world.entity.item.FallingBlockEntity.class, BlockState.class);
 
     @Override
-    public void setFallingBlockType(FallingBlock entity, BlockData block) {
+    public void setFallingBlockType(FallingBlock fallingBlock, BlockData block) {
         BlockState state = ((CraftBlockData) block).getState();
-        FallingBlockEntity nmsEntity = ((CraftFallingBlock) entity).getHandle();
+        FallingBlockEntity nmsEntity = ((CraftFallingBlock) fallingBlock).getHandle();
         try {
             FALLINGBLOCK_TYPE_SETTER.invoke(nmsEntity, state);
         }
@@ -740,16 +733,6 @@ public class EntityHelperImpl extends EntityHelper {
         ServerLevel level = ((CraftWorld) spawner.getWorld()).getHandle();
         net.minecraft.world.entity.Entity nmsEntity = nmsSpawner.getSpawner().getOrCreateDisplayEntity(level, level.random, nmsSpawner.getBlockPos());
         return new EntityTag(nmsEntity.getBukkitEntity());
-    }
-
-    @Override
-    public void setFireworkLifetime(Firework firework, int ticks) {
-        ((CraftFirework) firework).getHandle().lifetime = ticks;
-    }
-
-    @Override
-    public int getFireworkLifetime(Firework firework) {
-        return ((CraftFirework) firework).getHandle().lifetime;
     }
 
     public static final Field ZOMBIE_INWATERTIME = ReflectionHelper.getFields(net.minecraft.world.entity.monster.Zombie.class).get(ReflectionMappingsInfo.Zombie_inWaterTime, int.class);
@@ -840,5 +823,11 @@ public class EntityHelperImpl extends EntityHelper {
     @Override
     public void setStepHeight(Entity entity, float stepHeight) {
         ((CraftEntity) entity).getHandle().setMaxUpStep(stepHeight);
+    }
+
+    @Override
+    public void openHorseInventory(Player player, AbstractHorse horse) {
+        net.minecraft.world.entity.animal.horse.AbstractHorse nmsHorse = ((CraftAbstractHorse) horse).getHandle();
+        ((CraftPlayer) player).getHandle().openHorseInventory(nmsHorse, nmsHorse.inventory);
     }
 }

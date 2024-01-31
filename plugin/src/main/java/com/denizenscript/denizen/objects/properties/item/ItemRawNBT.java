@@ -3,7 +3,6 @@ package com.denizenscript.denizen.objects.properties.item;
 import com.denizenscript.denizen.nms.NMSHandler;
 import com.denizenscript.denizen.nms.util.jnbt.*;
 import com.denizenscript.denizen.objects.ItemTag;
-import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.objects.Mechanism;
 import com.denizenscript.denizencore.objects.ObjectTag;
 import com.denizenscript.denizencore.objects.core.ElementTag;
@@ -12,10 +11,14 @@ import com.denizenscript.denizencore.objects.core.MapTag;
 import com.denizenscript.denizencore.objects.properties.Property;
 import com.denizenscript.denizencore.tags.Attribute;
 import com.denizenscript.denizencore.tags.TagContext;
+import com.denizenscript.denizencore.utilities.debugging.Debug;
 import com.denizenscript.denizencore.utilities.text.StringHolder;
 import org.bukkit.Material;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ItemRawNBT implements Property {
 
@@ -45,64 +48,56 @@ public class ItemRawNBT implements Property {
         item = _item;
     }
 
-    public static StringHolder[] defaultNbtKeys;
-
-    static {
-        String[] defaultNbtKeysRaw = new String[] {
-                // Denizen
-                "Denizen Item Script", "DenizenItemScript", "Denizen NBT", "Denizen",
-                // General
-                "Damage", "Unbreakable", "CanDestroy", "CustomModelData",
-                // Display data
-                "display", "HideFlags",
-                // Block
-                "CanPlaceOn", "BlockEntityTag", "BlockStateTag",
-                // Enchanting
-                "Enchantments", "StoredEnchantments", "RepairCost",
-                // Attributes
-                "AttributeModifiers",
-                // Potions
-                "CustomPotionEffects", "Potion", "CustomPotionColor",
-                // Crossbow specific
-                "ChargedProjectiles", "Charged",
-                // Book specific
-                "resolved", "generation", "author", "title", "pages",
-                // Player Head specific
-                "SkullOwner",
-                // Firework specific
-                "Explosion", "Fireworks",
-                //"EntityTag", // Special handling
-                // Bucket specific
-                //"BucketVariantTag", // Temporarily sent through as raw due to lack of property coverage
-                // Map specific
-                "map", "map_scale_direction",
-                //"Decorations", // Temporarily sent through due to apparent usage in certain vanilla cases not covered by properties
-                // Stew specific
-                "Effects",
-                // Lodestone compass specific
-                //"LodestoneDimension", "LodestonePos", // Temporarily sent through due to "Dimension" inconsistency, and compatibility with unloaded worlds
-                "LodestoneTracked",
-                // Bundle specific
-                "Items",
-                // Goat Horn specific
-                "instrument",
-        };
-        defaultNbtKeys = new StringHolder[defaultNbtKeysRaw.length];
-        for (int i = 0; i < defaultNbtKeysRaw.length; i++) {
-            defaultNbtKeys[i] = new StringHolder(defaultNbtKeysRaw[i]);
-        }
-    }
+    public static String[] defaultNbtKeys = new String[] {
+        // Denizen
+        "Denizen Item Script", "DenizenItemScript", "Denizen NBT", "Denizen",
+        // General
+        "Damage", "Unbreakable", "CanDestroy", "CustomModelData", "trim",
+        // Display data
+        "display", "HideFlags",
+        // Block
+        "CanPlaceOn", "BlockEntityTag", "BlockStateTag",
+        // Enchanting
+        "Enchantments", "StoredEnchantments", "RepairCost",
+        // Attributes
+        "AttributeModifiers",
+        // Potions
+        "CustomPotionEffects", "Potion", "CustomPotionColor",
+        // Crossbow specific
+        "ChargedProjectiles", "Charged",
+        // Book specific
+        "resolved", "generation", "author", "title", "pages",
+        // Player Head specific
+        "SkullOwner",
+        // Firework specific
+        "Explosion", "Fireworks",
+        //"EntityTag", // Special handling
+        // Bucket specific
+        //"BucketVariantTag", // Temporarily sent through as raw due to lack of property coverage
+        // Map specific
+        "map", "map_scale_direction",
+        //"Decorations", // Temporarily sent through due to apparent usage in certain vanilla cases not covered by properties
+        // Stew specific
+        "Effects",
+        // Lodestone compass specific
+        //"LodestoneDimension", "LodestonePos", // Temporarily sent through due to "Dimension" inconsistency, and compatibility with unloaded worlds
+        "LodestoneTracked",
+        // Bundle specific
+        "Items",
+        // Goat Horn specific
+        "instrument"
+    };
 
     public MapTag getNonDefaultNBTMap() {
         MapTag result = getFullNBTMap();
-        for (StringHolder key : defaultNbtKeys) {
-            result.map.remove(key);
+        for (String key : defaultNbtKeys) {
+            result.remove(key);
         }
         if (item.getBukkitMaterial() == Material.ITEM_FRAME) {
             MapTag entityMap = (MapTag) result.getObject("EntityTag");
             if (entityMap != null) {
                 entityMap.putObject("Invisible", null);
-                if (entityMap.map.isEmpty()) {
+                if (entityMap.isEmpty()) {
                     result.putObject("EntityTag", null);
                 }
             }
@@ -116,7 +111,7 @@ public class ItemRawNBT implements Property {
                 entityMap.putObject("Marker", null);
                 entityMap.putObject("Invisible", null);
                 entityMap.putObject("ShowArms", null);
-                if (entityMap.map.isEmpty()) {
+                if (entityMap.isEmpty()) {
                     result.putObject("EntityTag", null);
                 }
             }
@@ -133,9 +128,9 @@ public class ItemRawNBT implements Property {
     // @name Raw NBT Encoding
     // @group Useful Lists
     // @description
-    // The item Raw_NBT property encodes and decodes raw NBT data.
-    // For the sake of inter-compatibility, a special standard format is used to preserve data types.
-    // This system exists in Denizen primarily for the sake of compatibility with external plugins.
+    // Several things in Minecraft use NBT to store data, such as items and entities.
+    // For the sake of inter-compatibility, a special standard format is used in Denizen to preserve data types.
+    // This system exists in Denizen primarily for the sake of compatibility with external plugins/systems.
     // It should not be used in any scripts that don't rely on data from external plugins.
     //
     // NBT Tags are encoded as follows:
@@ -158,7 +153,7 @@ public class ItemRawNBT implements Property {
         if (object.startsWith("map@")) {
             MapTag map = MapTag.valueOf(object, context);
             Map<String, Tag> result = new LinkedHashMap<>();
-            for (Map.Entry<StringHolder, ObjectTag> entry : map.map.entrySet()) {
+            for (Map.Entry<StringHolder, ObjectTag> entry : map.entrySet()) {
                 try {
                     result.put(entry.getKey().str, convertObjectToNbt(entry.getValue().toString(), context, path + "." + entry.getKey().str));
                 }
@@ -337,7 +332,7 @@ public class ItemRawNBT implements Property {
     @Override
     public String getPropertyString() {
         MapTag nbt = getNonDefaultNBTMap();
-        if (!nbt.map.isEmpty()) {
+        if (!nbt.isEmpty()) {
             return nbt.identify();
         }
         else {
@@ -353,7 +348,7 @@ public class ItemRawNBT implements Property {
     public void setFullNBT(ItemTag item, MapTag input, TagContext context, boolean retainOld) {
         CompoundTag compoundTag = retainOld ? NMSHandler.itemHelper.getNbtData(item.getItemStack()) : null;
         Map<String, Tag> result = compoundTag == null ? new LinkedHashMap<>() : new LinkedHashMap<>(compoundTag.getValue());
-        for (Map.Entry<StringHolder, ObjectTag> entry : input.map.entrySet()) {
+        for (Map.Entry<StringHolder, ObjectTag> entry : input.entrySet()) {
             try {
                 Tag tag = convertObjectToNbt(entry.getValue().toString(), context, "(item).");
                 if (tag != null) {

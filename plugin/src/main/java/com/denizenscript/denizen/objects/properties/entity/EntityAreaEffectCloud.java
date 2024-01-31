@@ -234,8 +234,7 @@ public class EntityAreaEffectCloud implements Property {
         // @mechanism EntityTag.wait_time
         // @group properties
         // @description
-        // Returns the duration an entity must be exposed to
-        // the Area Effect Cloud before its effect is applied.
+        // Returns the duration before the Area Effect Cloud starts applying potion effects.
         // -->
         if (attribute.startsWith("wait_time")) {
             return new DurationTag(getHelper().getWaitTime())
@@ -490,8 +489,8 @@ public class EntityAreaEffectCloud implements Property {
             else {
                 try {
                     PotionType type = PotionType.valueOf(data.get(0));
-                    boolean extended = type.isExtendable() && CoreUtilities.equalsIgnoreCase(data.get(1), "true");
-                    boolean upgraded = type.isUpgradeable() && CoreUtilities.equalsIgnoreCase(data.get(2), "true");
+                    boolean upgraded = type.isUpgradeable() && CoreUtilities.equalsIgnoreCase(data.get(1), "true");
+                    boolean extended = type.isExtendable() && CoreUtilities.equalsIgnoreCase(data.get(2), "true");
                     if (extended && upgraded) {
                         mechanism.echoError("Potion cannot be both upgraded and extended");
                     }
@@ -618,8 +617,7 @@ public class EntityAreaEffectCloud implements Property {
         // @name wait_time
         // @input DurationTag
         // @description
-        // Sets the duration an entity must be exposed to
-        // the Area Effect Cloud before its effect is applied.
+        // Sets the duration before the Area Effect Cloud starts applying potion effects.
         // @tags
         // <EntityTag.wait_time>
         // -->
